@@ -1,0 +1,141 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutGrid,
+  Building2,
+  ShieldCheck,
+  NotebookTabs,
+  UsersRound,
+  BookOpen,
+  Calendar,
+  UserRoundCheck,
+  FileText,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+
+const navigation = [
+  { name: "Dashboard", href: "/", icon: LayoutGrid },
+  { name: "Departments", href: "/departments", icon: Building2 },
+  { name: "Admins", href: "/admins", icon: ShieldCheck },
+  { name: "Classes", href: "/classes", icon: NotebookTabs },
+  { name: "Students", href: "/students", icon: UsersRound },
+  { name: "Modules", href: "/modules", icon: BookOpen },
+  { name: "Schedules", href: "/schedules", icon: Calendar },
+  { name: "Attendance", href: "/attendance", icon: UserRoundCheck },
+  { name: "Reports", href: "/reports", icon: FileText },
+];
+
+export function AppSidebar({
+  mobileOpen,
+  onClose,
+}: {
+  mobileOpen: boolean;
+  onClose: () => void;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <>
+      <div
+        className={cn(
+          "fixed inset-0 z-30 bg-[#140f21]/35 transition-opacity md:hidden",
+          mobileOpen ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+        onClick={onClose}
+      />
+
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 h-screen w-[262px] bg-white transition-transform duration-200 md:translate-x-0",
+          mobileOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
+        <div className="flex h-full flex-col">
+          <div className="relative flex min-h-[90px] items-start justify-between items-center px-7 pt-7 pb-4">
+            <Link
+              href="/"
+              className="relative z-10 flex items-center"
+              onClick={onClose}
+            >
+              <span className="font-['Iowan_Old_Style','Palatino_Linotype',Georgia,serif] text-[48px] font-semibold leading-none tracking-[-0.07em] text-[#21243c]">
+                Attendo
+              </span>
+            </Link>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative z-10 mt-1 h-9 w-9 rounded-xl md:hidden"
+              onClick={onClose}
+            >
+              <X className="h-9 w-9" />
+            </Button>
+          </div>
+
+          <div className="relative flex-1 overflow-hidden">
+            <div className="absolute inset-x-0 bottom-0 top-[0px] z-20  bg-[url('/images/sidebar-bg.png')] bg-cover bg-top-left bg-no-repeat">
+              <div className="relative z-10 flex h-full flex-col px-5 pb-2 pt-[60px] text-white">
+                <nav className="flex-1">
+                  <ul className="space-y-[11px]">
+                    {navigation.map((item) => {
+                      const isActive =
+                        pathname === item.href ||
+                        (item.href !== "/" && pathname.startsWith(item.href));
+
+                      return (
+                        <li key={item.name} className="w-[200px]">
+                          <Link
+                            href={item.href}
+                            onClick={onClose}
+                            className={cn(
+                              "flex h-[34px] items-center gap-4 rounded-full px-4 text-[14px] font-medium leading-none transition-colors",
+                              isActive
+                                ? "bg-white text-[#2e2a39] shadow-[0_10px_22px_rgba(0,0,0,0.12)]"
+                                : "text-[#fbfaff] hover:bg-white/8",
+                            )}
+                          >
+                            <item.icon
+                              className={cn(
+                                "h-[18px] w-[18px] shrink-0",
+                                isActive ? "text-[#565063]" : "text-white",
+                              )}
+                              strokeWidth={1.9}
+                            />
+                            <span>{item.name}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </nav>
+
+                <div className="mx-1 mt-6 border-t border-white/10 py-5">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-[50px] w-[50px] border-0 bg-[#bdc2ff]">
+                      <AvatarFallback className="bg-[#bdc2ff] text-[18px] font-medium text-[#3b4264]">
+                        AA
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-semibold leading-5 text-white">
+                        Ahmed Abdelsamie
+                      </p>
+                      <p className="truncate text-[12px] leading-4 text-[#807b95]">
+                        admin@cms.edu
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
