@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -7,7 +8,7 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function UnauthorizedPage() {
+function UnauthorizedContent() {
   const searchParams = useSearchParams();
   const nextPath = searchParams.get("next");
   const { user, logout } = useAuth();
@@ -46,5 +47,13 @@ export default function UnauthorizedPage() {
         </CardContent>
       </Card>
     </main>
+  );
+}
+
+export default function UnauthorizedPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <UnauthorizedContent />
+    </Suspense>
   );
 }

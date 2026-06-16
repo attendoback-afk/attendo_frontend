@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ export function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.includes(pathname as (typeof PUBLIC_PATHS)[number]);
 }
 
-export function AuthRouteGuard({ children }: { children: ReactNode }) {
+function AuthRouteGuardInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -98,6 +98,22 @@ export function AuthRouteGuard({ children }: { children: ReactNode }) {
   }
 
   return children;
+}
+
+export function AuthRouteGuard({ children }: { children: ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background px-4">
+          <div className="dashboard-panel px-6 py-5 text-sm text-muted-foreground">
+            Checking session...
+          </div>
+        </div>
+      }
+    >
+      <AuthRouteGuardInner>{children}</AuthRouteGuardInner>
+    </Suspense>
+  );
 }
 
 export { LOGIN_PATH, UNAUTHORIZED_PATH };
