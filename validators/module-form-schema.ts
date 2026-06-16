@@ -18,6 +18,7 @@ export const moduleFormSchema = yup
       .string()
       .trim()
       .max(240, "Description must be 240 characters or less")
+      .nullable()
       .default(""),
   })
   .required();

@@ -1,15 +1,11 @@
 import type { EntityFormDefinition } from "@/types/form-builder";
-import type { SessionPayload } from "@/types/entity-form-values";
+import { DAY_OF_WEEK_VALUES, type SessionPayload } from "@/lib/api/types";
 import { sessionFormSchema } from "@/validators/session-form-schema";
 
-const dayOfWeekOptions = [
-  { label: "Monday", value: "1" },
-  { label: "Tuesday", value: "2" },
-  { label: "Wednesday", value: "3" },
-  { label: "Thursday", value: "4" },
-  { label: "Friday", value: "5" },
-  { label: "Saturday", value: "6" },
-];
+const dayOfWeekOptions = DAY_OF_WEEK_VALUES.map((value) => ({
+  label: value.charAt(0) + value.slice(1).toLowerCase(),
+  value,
+}));
 
 export const sessionFormDefinition: EntityFormDefinition<typeof sessionFormSchema, SessionPayload> = {
   entityName: "Session",
@@ -19,7 +15,7 @@ export const sessionFormDefinition: EntityFormDefinition<typeof sessionFormSchem
     classId: "",
     moduleId: "",
     roomId: "",
-    dayOfWeek: "",
+    dayOfWeek: "MONDAY",
     startTime: "",
     endTime: "",
   },
@@ -32,10 +28,10 @@ export const sessionFormDefinition: EntityFormDefinition<typeof sessionFormSchem
     { name: "endTime", label: "End Time", type: "time", section: "Schedule" },
   ],
   formatPayload: (values) => ({
-    classId: Number(values.classId),
-    moduleId: Number(values.moduleId),
-    roomId: Number(values.roomId),
-    dayOfWeek: Number(values.dayOfWeek),
+    classId: values.classId.trim(),
+    moduleId: values.moduleId.trim(),
+    roomId: values.roomId.trim(),
+    dayOfWeek: values.dayOfWeek as (typeof DAY_OF_WEEK_VALUES)[number],
     startTime: values.startTime,
     endTime: values.endTime,
   }),

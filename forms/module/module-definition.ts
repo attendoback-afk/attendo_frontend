@@ -1,5 +1,5 @@
 import type { EntityFormDefinition } from "@/types/form-builder";
-import type { ModulePayload } from "@/types/entity-form-values";
+import type { ModulePayload } from "@/lib/api/types";
 import { moduleFormSchema } from "@/validators/module-form-schema";
 
 export const moduleFormDefinition: EntityFormDefinition<typeof moduleFormSchema, ModulePayload> = {
@@ -26,6 +26,6 @@ export const moduleFormDefinition: EntityFormDefinition<typeof moduleFormSchema,
   formatPayload: (values) => ({
     name: values.name.trim(),
     code: values.code.trim().toUpperCase(),
-    description: values.description.trim() ? values.description.trim() : null,
+    description: values.description?.trim() ? values.description.trim() : null,
   }),
 };

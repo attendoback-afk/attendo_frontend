@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LogOut } from "lucide-react";
 import {
   LayoutGrid,
   Building2,
@@ -12,11 +13,14 @@ import {
   Calendar,
   UserRoundCheck,
   FileText,
+  CalendarDays,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { SoftStatusBadge } from "@/components/dashboard-kit";
+import { useAuth } from "@/components/providers/auth-provider";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutGrid },
@@ -25,6 +29,7 @@ const navigation = [
   { name: "Classes", href: "/classes", icon: NotebookTabs },
   { name: "Students", href: "/students", icon: UsersRound },
   { name: "Modules", href: "/modules", icon: BookOpen },
+  { name: "Sessions", href: "/sessions", icon: CalendarDays },
   { name: "Schedules", href: "/schedules", icon: Calendar },
   { name: "Attendance", href: "/attendance", icon: UserRoundCheck },
   { name: "Reports", href: "/reports", icon: FileText },
@@ -38,6 +43,25 @@ export function AppSidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const { user, logout, canAccess } = useAuth();
+  const visibleNavigation = navigation.filter((item) => {
+    if (item.href === "/admins" || item.href === "/departments") {
+      return canAccess(["MANAGER"]);
+    }
+
+    if (item.href === "/modules" || item.href === "/sessions") {
+      return canAccess(["MANAGER", "PROFESSOR", "ASSISTANT"]);
+    }
+
+    return true;
+  });
+  const initials =
+    user?.name
+      ?.split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "AU";
 
   return (
     <>
@@ -115,21 +139,39 @@ export function AppSidebar({
                 </nav>
 
                 <div className="mx-1 mt-6 border-t border-white/10 py-5">
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4">
                     <Avatar className="h-[50px] w-[50px] border-0 bg-[#bdc2ff]">
                       <AvatarFallback className="bg-[#bdc2ff] text-[18px] font-medium text-[#3b4264]">
-                        AA
+                        {initials}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="truncate text-[15px] font-semibold leading-5 text-white">
-                        Ahmed Abdelsamie
+                        {user?.name ?? "Signed in user"}
                       </p>
                       <p className="truncate text-[12px] leading-4 text-[#807b95]">
-                        admin@cms.edu
+                        {user?.email ?? "Loading profile..."}
                       </p>
+                      {user?.role ? (
+                        <div className="mt-2">
+                          <SoftStatusBadge
+                            tone={user.role === "MANAGER" ? "lavender" : "blue"}
+                          >
+                            {user.role}
+                          </SoftStatusBadge>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="mt-4 h-9 w-full justify-start rounded-full px-4 text-[#fbfaff] hover:bg-white/8 hover:text-white"
+                    onClick={logout}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </Button>
                 </div>
               </div>
             </div>
