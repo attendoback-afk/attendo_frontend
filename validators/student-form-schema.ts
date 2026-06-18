@@ -28,6 +28,6 @@ export const studentFormSchema = yup
       .min(3, "Student code must be at least 3 characters")
       .max(30, "Student code must be 30 characters or less")
       .required("Student code is required"),
-    active: yup.boolean().required(),
+    classId: yup.string().trim().required("Class is required"),
   })
   .required();

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { SessionForm } from "@/forms/session/session-form";
 import { classesApi, modulesApi, roomsApi, sessionsApi } from "@/lib/api/services";
-import type { ClassRecord, ModuleRecord, RoomRecord, SessionRecord } from "@/lib/api/types";
+import type { ClassRecord, ModuleRecord, RoomRecord, SessionRecord, DayOfWeek } from "@/lib/api/types";
 import { useToast } from "@/hooks/use-toast";
 
 function mapOptions(records: Array<ClassRecord | ModuleRecord | RoomRecord>) {
@@ -13,6 +13,44 @@ function mapOptions(records: Array<ClassRecord | ModuleRecord | RoomRecord>) {
     value: record.id,
     label: "code" in record && record.code ? `${record.code} - ${record.name}` : record.name,
   }));
+}
+
+function coerceSessionPayload(values: {
+  classId: string;
+  moduleId: string;
+  roomId: string;
+  dayOfWeek: DayOfWeek;
+  startTime: string;
+  endTime: string;
+}) {
+  function toISOTime(hhmm: string) {
+    return `1970-01-01T${hhmm}:00Z`;
+  }
+
+  return {
+    classId: values.classId.trim(),
+    moduleId: values.moduleId.trim(),
+    roomId: values.roomId.trim(),
+    dayOfWeek: values.dayOfWeek,
+    startTime: toISOTime(values.startTime),
+    endTime: toISOTime(values.endTime),
+  };
+}
+
+function normalizeTimeValue(value: string) {
+  if (/^\d{2}:\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(0, 5);
+  }
+
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
 }
 
 export default function EditSessionPage() {
@@ -85,16 +123,16 @@ export default function EditSessionPage() {
           moduleOptions={mapOptions(modules)}
           roomOptions={mapOptions(rooms)}
           defaultValues={{
-            classId: sessionRecord.classId,
-            moduleId: sessionRecord.moduleId,
-            roomId: sessionRecord.roomId,
+            classId: String(sessionRecord.classId),
+            moduleId: String(sessionRecord.moduleId),
+            roomId: String(sessionRecord.roomId),
             dayOfWeek: sessionRecord.dayOfWeek,
-            startTime: sessionRecord.startTime,
-            endTime: sessionRecord.endTime,
+            startTime: normalizeTimeValue(sessionRecord.startTime),
+            endTime: normalizeTimeValue(sessionRecord.endTime),
           }}
           submitLabel="Update Session"
           onSubmit={async (values) => {
-            await sessionsApi.update(sessionRecord.id, values);
+            await sessionsApi.update(sessionRecord.id, coerceSessionPayload(values));
             toast({ title: "Session updated", description: "The session details were saved successfully." });
             router.push(`/sessions/${sessionRecord.id}`);
             router.refresh();

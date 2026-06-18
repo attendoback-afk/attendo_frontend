@@ -1,15 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { AdminEditDialog } from "@/components/admins/admin-edit-dialog";
+import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { PageActionButton, SearchInput, SoftStatusBadge } from "@/components/dashboard-kit";
-import { useAdmins } from "@/hooks/use-admins";
-import { useToast } from "@/hooks/use-toast";
-import type { AdminFormValues } from "@/types/entity-form-values";
-import type { AdminRecord } from "@/lib/people-store";
+import { PageActionButton, SoftStatusBadge } from "@/components/dashboard-kit";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -29,167 +27,238 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { staffApi } from "@/lib/api/services";
+import type { StaffRecord } from "@/lib/api/types";
+
+function formatDate(value?: string) {
+  if (!value) return "N/A";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+}
 
 export default function AdminsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingAdmin, setEditingAdmin] = useState<AdminRecord | null>(null);
-  const [adminToDelete, setAdminToDelete] = useState<AdminRecord | null>(null);
+  const [admins, setAdmins] = useState<StaffRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [adminToDelete, setAdminToDelete] = useState<StaffRecord | null>(null);
   const { toast } = useToast();
-  const { admins, updateAdmin, deleteAdmin } = useAdmins();
 
-  const filteredAdmins = admins.filter(
-    (admin) =>
-      admin.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      admin.email.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  useEffect(() => {
+    let active = true;
 
-  const handleEditSubmit = async (values: AdminFormValues) => {
-    if (!editingAdmin) {
-      return;
+    async function loadAdmins() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const records = await staffApi.list();
+        if (active) {
+          setAdmins(records);
+        }
+      } catch (loadError) {
+        if (active) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Unable to load admins.",
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
     }
 
-    const normalizedEmail = values.email.trim().toLowerCase();
-    const emailTaken = admins.some(
-      (admin) => admin.id !== editingAdmin.id && admin.email.toLowerCase() === normalizedEmail,
+    void loadAdmins();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filteredAdmins = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return admins;
+    return admins.filter((admin) =>
+      [admin.fullName, admin.email, admin.role].some((value) =>
+        value?.toLowerCase().includes(query),
+      ),
     );
+  }, [admins, searchQuery]);
 
-    if (emailTaken) {
-      throw new Error("Email already exists for another admin.");
+  const handleDelete = async () => {
+    if (!adminToDelete) return;
+    setDeletingId(adminToDelete.id);
+    try {
+      await staffApi.delete(adminToDelete.id);
+      setAdmins((current) =>
+        current.filter((item) => item.id !== adminToDelete.id),
+      );
+      toast({
+        title: "Admin deleted",
+        description: "The admin account has been removed.",
+      });
+      setAdminToDelete(null);
+    } catch (deleteError) {
+      toast({
+        title: "Unable to delete admin",
+        description:
+          deleteError instanceof Error
+            ? deleteError.message
+            : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
     }
-
-    updateAdmin(editingAdmin.id, {
-      fullName: values.fullName.trim(),
-      email: normalizedEmail,
-      password: values.password,
-      role: values.role,
-      active: values.active,
-    });
-
-    toast({
-      title: "Admin updated",
-      description: "The admin details were saved successfully.",
-    });
-  };
-
-  const handleDelete = () => {
-    if (!adminToDelete) {
-      return;
-    }
-
-    deleteAdmin(adminToDelete.id);
-    toast({
-      title: "Admin deleted",
-      description: "The admin account has been removed.",
-    });
-    setAdminToDelete(null);
   };
 
   return (
     <DashboardLayout
       title="Admin Management"
-      description="Manage doctors and department managers"
+      description="Manage manager, professor, and assistant accounts"
       action={
-        <Link href="/admins/new">
+        <Link href="/admins/create">
           <PageActionButton icon={Plus}>Add Admin</PageActionButton>
         </Link>
       }
     >
       <div className="dashboard-page">
-        <SearchInput
-          placeholder="Search admins..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-
-        <div className="dashboard-panel overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-[#fcfbff]">
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[120px] text-right"> </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAdmins.map((admin) => (
-                <TableRow key={admin.id}>
-                  <TableCell className="font-medium text-[#6f6a7e]">{admin.fullName}</TableCell>
-                  <TableCell>
-                    <SoftStatusBadge tone={admin.role === "manager" ? "lavender" : "blue"}>
-                      {admin.role}
-                    </SoftStatusBadge>
-                  </TableCell>
-                  <TableCell>{admin.email}</TableCell>
-                  <TableCell>
-                    <SoftStatusBadge tone={admin.active ? "success" : "danger"}>
-                      {admin.active ? "Active" : "Inactive"}
-                    </SoftStatusBadge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-lg"
-                        onClick={() => setEditingAdmin(admin)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">Edit admin</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-lg text-[#ff7f89] hover:text-[#ff7f89]"
-                        onClick={() => setAdminToDelete(admin)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete admin</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search admins by name, email, or role..."
+            className="h-11 rounded-xl pl-14"
+          />
         </div>
-      </div>
 
-      <AdminEditDialog
-        admin={editingAdmin}
-        open={Boolean(editingAdmin)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingAdmin(null);
-          }
-        }}
-        onSubmit={handleEditSubmit}
-      />
+        <Card className="dashboard-panel gap-0 overflow-hidden py-0">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader className="bg-[#fcfbff]">
+                <TableRow>
+                  <TableHead>Full Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Created Date</TableHead>
+                  <TableHead className="w-[170px] text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell colSpan={5}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : error ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-10 text-center text-destructive"
+                    >
+                      {error}
+                    </TableCell>
+                  </TableRow>
+                ) : filteredAdmins.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-10 text-center text-muted-foreground"
+                    >
+                      No admins found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredAdmins.map((admin) => (
+                    <TableRow key={admin.userId}>
+                      <TableCell className="font-medium">
+                        {admin?.user?.fullName}
+                      </TableCell>
+                      <TableCell>{admin?.user?.email}</TableCell>
+                      <TableCell>
+                        <SoftStatusBadge
+                          tone={
+                            admin.role?.name === "MANAGER" ? "lavender" : "blue"
+                          }
+                        >
+                          {admin.role?.name}
+                        </SoftStatusBadge>
+                      </TableCell>
+                      <TableCell>
+                        {formatDate(admin.createdAt ?? admin.createdDate)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            asChild
+                            size="icon-sm"
+                            variant="ghost"
+                            className="rounded-lg"
+                          >
+                            <Link href={`/admins/${admin.userId}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            asChild
+                            size="icon-sm"
+                            variant="ghost"
+                            className="rounded-lg"
+                          >
+                            <Link href={`/admins/${admin.userId}/edit`}>
+                              <Pencil className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            className="rounded-lg text-destructive hover:text-destructive"
+                            onClick={() => setAdminToDelete(admin)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
 
       <AlertDialog
         open={Boolean(adminToDelete)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setAdminToDelete(null);
-          }
-        }}
+        onOpenChange={(open) => !open && setAdminToDelete(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Admin</AlertDialogTitle>
             <AlertDialogDescription>
               {adminToDelete
-                ? `Are you sure you want to delete ${adminToDelete.fullName}? This action cannot be undone.`
+                ? `Are you sure you want to delete ${adminToDelete.fullName}?`
                 : "Are you sure you want to delete this admin?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="rounded-lg" onClick={handleDelete}>
-              Delete
+            <AlertDialogAction
+              className="rounded-lg"
+              onClick={handleDelete}
+              disabled={Boolean(deletingId)}
+            >
+              {deletingId ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

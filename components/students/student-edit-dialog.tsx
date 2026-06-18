@@ -2,7 +2,7 @@
 
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import type { InferType } from "yup";
 import {
   Dialog,
@@ -16,8 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import type { StudentRecord } from "@/lib/people-store";
+import type { StudentRecord } from "@/lib/api/types";
 import { studentFormSchema } from "@/validators/student-form-schema";
 
 type StudentEditValues = InferType<typeof studentFormSchema>;
@@ -41,7 +40,7 @@ export function StudentEditDialog({
       email: "",
       password: "",
       studentCode: "",
-      active: true,
+      classId: "",
     },
     mode: "onBlur",
     reValidateMode: "onChange",
@@ -53,13 +52,13 @@ export function StudentEditDialog({
     }
 
     setSubmitError(null);
-    methods.reset({
-      fullName: student.fullName,
-      email: student.email,
-      password: student.password,
-      studentCode: student.studentCode,
-      active: student.active,
-    });
+      methods.reset({
+        fullName: student.fullName,
+        email: student.email,
+        password: student.password,
+        studentCode: student.studentCode,
+        classId: student.classId,
+      });
   }, [student, methods]);
 
   const handleSubmit = methods.handleSubmit(async (values) => {
@@ -144,25 +143,20 @@ export function StudentEditDialog({
                   <p className="text-sm text-destructive">{methods.formState.errors.password.message}</p>
                 ) : null}
               </div>
-            </div>
 
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
-              <div className="space-y-1">
-                <Label htmlFor="edit-student-active">Active</Label>
-                <p className="text-sm leading-5 text-muted-foreground">Toggle whether the student record is active.</p>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-student-class-id">Class ID</Label>
+                <Input
+                  id="edit-student-class-id"
+                  className="rounded-lg"
+                  disabled={methods.formState.isSubmitting}
+                  aria-invalid={Boolean(methods.formState.errors.classId)}
+                  {...methods.register("classId")}
+                />
+                {methods.formState.errors.classId?.message ? (
+                  <p className="text-sm text-destructive">{methods.formState.errors.classId.message}</p>
+                ) : null}
               </div>
-              <Controller
-                control={methods.control}
-                name="active"
-                render={({ field }) => (
-                  <Switch
-                    id="edit-student-active"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    disabled={methods.formState.isSubmitting}
-                  />
-                )}
-              />
             </div>
 
             <DialogFooter>

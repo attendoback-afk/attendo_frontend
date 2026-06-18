@@ -7,7 +7,7 @@ export const sessionFormSchema = yup
     moduleId: yup.string().required("Module is required"),
     roomId: yup.string().required("Room is required"),
     dayOfWeek: yup
-      .mixed<(typeof DAY_OF_WEEK_VALUES)[number]>()
+      .number()
       .oneOf([...DAY_OF_WEEK_VALUES], "Day is required")
       .required("Day is required"),
     startTime: yup

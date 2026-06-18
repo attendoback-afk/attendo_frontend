@@ -5,14 +5,34 @@ import { sessionFormSchema } from "@/validators/session-form-schema";
 import type { DefaultValues } from "react-hook-form";
 import type { InferType } from "yup";
 import type { FieldConfig } from "@/types/form-builder";
-import { DAY_OF_WEEK_VALUES } from "@/lib/api/types";
+import { DAY_OF_WEEK_LABELS, DAY_OF_WEEK_VALUES } from "@/lib/api/types";
 
 type SessionFormValues = InferType<typeof sessionFormSchema>;
 
 const dayOfWeekOptions = DAY_OF_WEEK_VALUES.map((value) => ({
-  label: value.charAt(0) + value.slice(1).toLowerCase(),
+  label: DAY_OF_WEEK_LABELS[value],
   value,
 }));
+
+function normalizeTimeValue(value: unknown) {
+  if (typeof value !== "string" || !value) {
+    return "";
+  }
+
+  if (/^\d{2}:\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value.slice(0, 5);
+  }
+
+  const hours = String(date.getUTCHours()).padStart(2, "0");
+  const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+  return `${hours}:${minutes}`;
+}
 
 function buildFields({
   classOptions,
@@ -78,7 +98,7 @@ export function SessionForm({
     classId: "",
     moduleId: "",
     roomId: "",
-    dayOfWeek: "MONDAY",
+    dayOfWeek: 0,
     startTime: "",
     endTime: "",
   },
@@ -89,11 +109,17 @@ export function SessionForm({
   moduleOptions = [],
   roomOptions = [],
 }: SessionFormProps) {
+  const normalizedDefaultValues = {
+    ...defaultValues,
+    startTime: normalizeTimeValue(defaultValues.startTime),
+    endTime: normalizeTimeValue(defaultValues.endTime),
+  };
+
   return (
     <FormBuilder
       fields={buildFields({ classOptions, moduleOptions, roomOptions })}
       validationSchema={sessionFormSchema}
-      defaultValues={defaultValues}
+      defaultValues={normalizedDefaultValues}
       submitLabel={submitLabel}
       submittingLabel={submittingLabel}
       cancelHref={cancelHref}

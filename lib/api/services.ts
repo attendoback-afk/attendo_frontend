@@ -4,6 +4,8 @@ import type {
   ClassRecord,
   ClassPayload,
   CurrentUser,
+  AttendancePayload,
+  AttendanceRecord,
   DepartmentPayload,
   DepartmentRecord,
   LoginPayload,
@@ -13,6 +15,12 @@ import type {
   RoomRecord,
   SessionPayload,
   SessionRecord,
+  StaffPayload,
+  StaffRecord,
+  StaffUpdatePayload,
+  StudentPayload,
+  StudentRecord,
+  StudentUpdatePayload,
 } from "@/lib/api/types";
 
 const json = (payload: unknown) => JSON.stringify(payload);
@@ -77,10 +85,40 @@ export const roomsApi = {
 
 export const sessionsApi = {
   list: async () => toArray<SessionRecord>(await apiRequest<unknown>("/sessions")),
+  listByClass: async (classId: string) =>
+    toArray<SessionRecord>(await apiRequest<unknown>(`/sessions?classId=${encodeURIComponent(classId)}`)),
   get: (id: string) => apiRequest<SessionRecord>(`/sessions/${id}`),
   create: (payload: SessionPayload) =>
     apiRequest<SessionRecord>("/sessions", { method: "POST", body: json(payload) }),
   update: (id: string, payload: SessionPayload) =>
     apiRequest<SessionRecord>(`/sessions/${id}`, { method: "PUT", body: json(payload) }),
   delete: (id: string) => apiRequest<void>(`/sessions/${id}`, { method: "DELETE" }),
+};
+
+export const staffApi = {
+  list: async () => toArray<StaffRecord>(await apiRequest<unknown>("/staff")),
+  get: (id: string) => apiRequest<StaffRecord>(`/staff/${id}`),
+  create: (payload: StaffPayload) =>
+    apiRequest<StaffRecord>("/staff", { method: "POST", body: json(payload) }),
+  update: (id: string, payload: StaffUpdatePayload) =>
+    apiRequest<StaffRecord>(`/staff/${id}`, { method: "PUT", body: json(payload) }),
+  delete: (id: string) => apiRequest<void>(`/staff/${id}`, { method: "DELETE" }),
+};
+
+export const studentsApi = {
+  list: async () => toArray<StudentRecord>(await apiRequest<unknown>("/students")),
+  get: (id: string) => apiRequest<StudentRecord>(`/students/${id}`),
+  create: (payload: StudentPayload) =>
+    apiRequest<StudentRecord>("/students", { method: "POST", body: json(payload) }),
+  update: (id: string, payload: StudentUpdatePayload) =>
+    apiRequest<StudentRecord>(`/students/${id}`, { method: "PUT", body: json(payload) }),
+  delete: (id: string) => apiRequest<void>(`/students/${id}`, { method: "DELETE" }),
+  attendance: async (id: string) => toArray<AttendanceRecord>(await apiRequest<unknown>(`/students/${id}/attendance`)),
+};
+
+export const attendanceApi = {
+  create: (payload: AttendancePayload) =>
+    apiRequest<AttendanceRecord>("/attendance", { method: "POST", body: json(payload) }),
+  bulkCreate: (payload: AttendancePayload[]) =>
+    apiRequest<AttendanceRecord[]>("/attendance/bulk", { method: "POST", body: json(payload) }),
 };

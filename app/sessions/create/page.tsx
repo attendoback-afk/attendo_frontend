@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { SessionForm } from "@/forms/session/session-form";
 import { classesApi, modulesApi, roomsApi, sessionsApi } from "@/lib/api/services";
-import type { ClassRecord, ModuleRecord, RoomRecord } from "@/lib/api/types";
+import type { ClassRecord, ModuleRecord, RoomRecord, DayOfWeek } from "@/lib/api/types";
 import { useToast } from "@/hooks/use-toast";
 
 function mapOptions(records: Array<ClassRecord | ModuleRecord | RoomRecord>) {
@@ -13,6 +13,28 @@ function mapOptions(records: Array<ClassRecord | ModuleRecord | RoomRecord>) {
     value: record.id,
     label: "code" in record && record.code ? `${record.code} - ${record.name}` : record.name,
   }));
+}
+
+function coerceSessionPayload(values: {
+  classId: string;
+  moduleId: string;
+  roomId: string;
+  dayOfWeek: DayOfWeek;
+  startTime: string;
+  endTime: string;
+}) {
+  function toISOTime(hhmm: string) {
+    return `1970-01-01T${hhmm}:00Z`;
+  }
+
+  return {
+    classId: values.classId.trim(),
+    moduleId: values.moduleId.trim(),
+    roomId: values.roomId.trim(),
+    dayOfWeek: values.dayOfWeek,
+    startTime: toISOTime(values.startTime),
+    endTime: toISOTime(values.endTime),
+  };
 }
 
 export default function CreateSessionPage() {
@@ -78,7 +100,7 @@ export default function CreateSessionPage() {
           moduleOptions={mapOptions(modules)}
           roomOptions={mapOptions(rooms)}
           onSubmit={async (values) => {
-            await sessionsApi.create(values);
+            await sessionsApi.create(coerceSessionPayload(values));
             toast({ title: "Session created", description: "The new session has been saved." });
             router.push("/sessions");
             router.refresh();

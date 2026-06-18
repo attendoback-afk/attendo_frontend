@@ -8,10 +8,37 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { classesApi, modulesApi, roomsApi, sessionsApi } from "@/lib/api/services";
-import type { ClassRecord, ModuleRecord, RoomRecord, SessionRecord } from "@/lib/api/types";
+import { DAY_OF_WEEK_LABELS, type ClassRecord, type ModuleRecord, type RoomRecord, type SessionRecord } from "@/lib/api/types";
 
-function labelForDay(day: string) {
-  return day.charAt(0) + day.slice(1).toLowerCase();
+function labelForDay(day: number) {
+  return DAY_OF_WEEK_LABELS[day as keyof typeof DAY_OF_WEEK_LABELS] ?? String(day);
+}
+
+function parseTimeValue(value: string) {
+  if (/^\d{2}:\d{2}$/.test(value)) {
+    const [hours, minutes] = value.split(":").map(Number);
+    return { hours, minutes };
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return { hours: 0, minutes: 0 };
+  }
+
+  return { hours: date.getUTCHours(), minutes: date.getUTCMinutes() };
+}
+
+function formatSessionTime(value: string) {
+  const { hours, minutes } = parseTimeValue(value);
+  const date = new Date(Date.UTC(1970, 0, 1, hours, minutes));
+
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "UTC",
+  }).format(date);
 }
 
 function buildLabel(record: ClassRecord | ModuleRecord | RoomRecord | null | undefined) {
@@ -127,11 +154,15 @@ export default function SessionDetailsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Start Time</p>
-                  <p className="mt-1 text-[18px] font-semibold text-foreground">{sessionRecord.startTime}</p>
+                  <p className="mt-1 text-[18px] font-semibold text-foreground">
+                    {formatSessionTime(sessionRecord.startTime)}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">End Time</p>
-                  <p className="mt-1 text-[18px] font-semibold text-foreground">{sessionRecord.endTime}</p>
+                  <p className="mt-1 text-[18px] font-semibold text-foreground">
+                    {formatSessionTime(sessionRecord.endTime)}
+                  </p>
                 </div>
               </div>
             ) : (

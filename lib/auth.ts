@@ -12,7 +12,6 @@ export function resolveRole(
   if (typeof input === "string") {
     return AUTH_ROLES.includes(input as AuthRole) ? input : null;
   }
-  console.log(input);
 
   return input.staff.role.name as any;
 }
@@ -57,7 +56,13 @@ const ROUTE_ACCESS_RULES: RouteAccessRule[] = [
   { path: "/unauthorized", public: true },
   { path: "/admins", allowedRoles: ["MANAGER"] },
   { path: "/departments", allowedRoles: ["MANAGER"] },
-  { path: "/admins/new", allowedRoles: ["MANAGER"] },
+  { path: "/admins/create", allowedRoles: ["MANAGER"] },
+  { path: "/admins/:id/edit", allowedRoles: ["MANAGER"] },
+  { path: "/admins/:id", allowedRoles: ["MANAGER"] },
+  { path: "/students/create", allowedRoles: ["MANAGER"] },
+  { path: "/students/import", allowedRoles: ["MANAGER"] },
+  { path: "/students/:id/edit", allowedRoles: ["MANAGER"] },
+  { path: "/students/:id", allowedRoles: ["MANAGER"] },
   { path: "/departments/new", allowedRoles: ["MANAGER"] },
   { path: "/classes/new", allowedRoles: ["MANAGER"] },
   { path: "/students/new", allowedRoles: ["MANAGER"] },

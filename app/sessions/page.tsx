@@ -7,6 +7,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageActionButton, SearchInput } from "@/components/dashboard-kit";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { SoftStatusBadge } from "@/components/dashboard-kit";
 import {
   Select,
   SelectContent,
@@ -34,12 +35,59 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { classesApi, modulesApi, roomsApi, sessionsApi } from "@/lib/api/services";
-import { DAY_OF_WEEK_VALUES, type ClassRecord, type ModuleRecord, type RoomRecord, type SessionRecord } from "@/lib/api/types";
+import {
+  DAY_OF_WEEK_LABELS,
+  DAY_OF_WEEK_VALUES,
+  type ClassRecord,
+  type ModuleRecord,
+  type RoomRecord,
+  type SessionRecord,
+} from "@/lib/api/types";
 
 const PAGE_SIZE = 6;
 
-function labelForDay(day: string) {
-  return day.charAt(0) + day.slice(1).toLowerCase();
+function labelForDay(day: number) {
+  return DAY_OF_WEEK_LABELS[day as keyof typeof DAY_OF_WEEK_LABELS] ?? String(day);
+}
+
+function parseTime(value: string) {
+  if (/^\d{2}:\d{2}$/.test(value)) {
+    const [hours, minutes] = value.split(":").map(Number);
+    return new Date(Date.UTC(1970, 0, 1, Number.isFinite(hours) ? hours : 0, Number.isFinite(minutes) ? minutes : 0));
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date(Date.UTC(1970, 0, 1, 0, 0));
+  }
+
+  return date;
+}
+
+function formatSessionTime(value: string) {
+  const date = parseTime(value);
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function formatDuration(startTime: string, endTime: string) {
+  const start = parseTime(startTime);
+  const end = parseTime(endTime);
+  const diffMinutes = Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
+
+  if (diffMinutes === 0) {
+    return "0m";
+  }
+
+  const hours = Math.floor(diffMinutes / 60);
+  const minutes = diffMinutes % 60;
+
+  return [hours ? `${hours}h` : null, minutes ? `${minutes}m` : null].filter(Boolean).join(" ");
 }
 
 function buildEntityLabel(record: ClassRecord | ModuleRecord | RoomRecord | null | undefined) {
@@ -122,7 +170,7 @@ export default function SessionsPage() {
       if (classFilter !== "all" && session.classId !== classFilter) return false;
       if (moduleFilter !== "all" && session.moduleId !== moduleFilter) return false;
       if (roomFilter !== "all" && session.roomId !== roomFilter) return false;
-      if (dayFilter !== "all" && session.dayOfWeek !== dayFilter) return false;
+      if (dayFilter !== "all" && session.dayOfWeek !== Number(dayFilter)) return false;
 
       if (!query) return true;
 
@@ -227,7 +275,7 @@ export default function SessionsPage() {
             <SelectContent>
               <SelectItem value="all">All Days</SelectItem>
               {DAY_OF_WEEK_VALUES.map((day) => (
-                <SelectItem key={day} value={day}>
+                <SelectItem key={day} value={String(day)}>
                   {labelForDay(day)}
                 </SelectItem>
               ))}
@@ -282,7 +330,14 @@ export default function SessionsPage() {
                         <TableCell>{buildEntityLabel(roomRecord)}</TableCell>
                         <TableCell>{labelForDay(session.dayOfWeek)}</TableCell>
                         <TableCell>
-                          {session.startTime} - {session.endTime}
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium text-foreground">
+                              {formatSessionTime(session.startTime)} - {formatSessionTime(session.endTime)}
+                            </span>
+                            <SoftStatusBadge tone="blue" className="w-fit">
+                              {formatDuration(session.startTime, session.endTime)} duration
+                            </SoftStatusBadge>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">

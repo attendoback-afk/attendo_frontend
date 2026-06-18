@@ -1,5 +1,5 @@
 import * as yup from "yup";
-import { ADMIN_ROLE_OPTIONS } from "@/lib/people-store";
+import { STAFF_ROLE_VALUES } from "@/lib/api/types";
 
 export const adminFormSchema = yup
   .object({
@@ -24,9 +24,8 @@ export const adminFormSchema = yup
       .matches(/[^A-Za-z0-9]/, "Password must include a symbol")
       .required("Password is required"),
     role: yup
-      .mixed<(typeof ADMIN_ROLE_OPTIONS)[number]>()
-      .oneOf([...ADMIN_ROLE_OPTIONS], "Select a valid role")
+      .mixed<(typeof STAFF_ROLE_VALUES)[number]>()
+      .oneOf([...STAFF_ROLE_VALUES], "Select a valid role")
       .required("Role is required"),
-    active: yup.boolean().required(),
   })
   .required();

@@ -23,9 +23,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import type { AdminRecord } from "@/lib/people-store";
-import { ADMIN_ROLE_OPTIONS } from "@/lib/people-store";
+import type { StaffRecord } from "@/lib/api/types";
+import { STAFF_ROLE_VALUES } from "@/lib/api/types";
 import { adminFormSchema } from "@/validators/admin-form-schema";
 
 type AdminEditValues = InferType<typeof adminFormSchema>;
@@ -36,7 +35,7 @@ export function AdminEditDialog({
   onOpenChange,
   onSubmit,
 }: {
-  admin: AdminRecord | null;
+  admin: StaffRecord | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: AdminEditValues) => Promise<void> | void;
@@ -48,8 +47,7 @@ export function AdminEditDialog({
       fullName: "",
       email: "",
       password: "",
-      role: "admin",
-      active: true,
+      role: "MANAGER",
     },
     mode: "onBlur",
     reValidateMode: "onChange",
@@ -61,13 +59,12 @@ export function AdminEditDialog({
     }
 
     setSubmitError(null);
-    methods.reset({
-      fullName: admin.fullName,
-      email: admin.email,
-      password: admin.password,
-      role: admin.role,
-      active: admin.active,
-    });
+      methods.reset({
+        fullName: admin.fullName,
+        email: admin.email,
+        password: admin.password,
+        role: admin.role,
+      });
   }, [admin, methods]);
 
   const handleSubmit = methods.handleSubmit(async (values) => {
@@ -135,9 +132,9 @@ export function AdminEditDialog({
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ADMIN_ROLE_OPTIONS.map((role) => (
+                        {STAFF_ROLE_VALUES.map((role) => (
                           <SelectItem key={role} value={role}>
-                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                            {role}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -163,25 +160,6 @@ export function AdminEditDialog({
                   <p className="text-sm text-destructive">{methods.formState.errors.password.message}</p>
                 ) : null}
               </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
-              <div className="space-y-1">
-                <Label htmlFor="edit-admin-active">Active</Label>
-                <p className="text-sm leading-5 text-muted-foreground">Toggle whether the account remains active.</p>
-              </div>
-              <Controller
-                control={methods.control}
-                name="active"
-                render={({ field }) => (
-                  <Switch
-                    id="edit-admin-active"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                    disabled={methods.formState.isSubmitting}
-                  />
-                )}
-              />
             </div>
 
             <DialogFooter>
