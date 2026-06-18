@@ -1,32 +1,37 @@
 "use client";
 
-import { useToast } from "@/hooks/use-toast";
 import { FormBuilder } from "@/components/form-builder/form-builder";
 import { departmentFormDefinition } from "@/forms/department/department-definition";
-import { useDepartments } from "@/hooks/use-departments";
+import type { DefaultValues } from "react-hook-form";
+import type { InferType } from "yup";
 
-export function DepartmentForm({ cancelHref }: { cancelHref?: string }) {
-  const { toast } = useToast();
-  const { addDepartment } = useDepartments();
+type DepartmentFormValues = InferType<typeof departmentFormDefinition.schema>;
 
+type DepartmentFormProps = {
+  cancelHref?: string;
+  defaultValues?: DefaultValues<DepartmentFormValues>;
+  submitLabel?: string;
+  submittingLabel?: string;
+  onSubmit?: (values: DepartmentFormValues) => Promise<void> | void;
+};
+
+export function DepartmentForm({
+  cancelHref,
+  defaultValues = departmentFormDefinition.defaultValues,
+  submitLabel = departmentFormDefinition.submitLabel,
+  submittingLabel,
+  onSubmit,
+}: DepartmentFormProps) {
   return (
     <FormBuilder
       fields={departmentFormDefinition.fields}
       validationSchema={departmentFormDefinition.schema}
-      defaultValues={departmentFormDefinition.defaultValues}
-      submitLabel={departmentFormDefinition.submitLabel}
-      submittingLabel="Creating Department..."
+      defaultValues={defaultValues}
+      submitLabel={submitLabel}
+      submittingLabel={submittingLabel}
       cancelHref={cancelHref}
       onSubmit={async (data) => {
-        const payload = departmentFormDefinition.formatPayload(data);
-        addDepartment(payload);
-      }}
-      onSubmitSuccess={(_, methods) => {
-        methods.reset(departmentFormDefinition.defaultValues);
-        toast({
-          title: "Department created",
-          description: "The new department has been added successfully.",
-        });
+        await onSubmit?.(data);
       }}
     />
   );

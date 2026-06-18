@@ -28,7 +28,7 @@ export function FilePreviewTable<T extends Record<string, unknown>>({
   rows: PreviewRow<T>[];
 }) {
   return (
-    <div className="dashboard-panel overflow-hidden">
+    <div className="dashboard-panel overflow-x-auto">
       <Table>
         <TableHeader className="bg-[#fcfbff]">
           <TableRow>

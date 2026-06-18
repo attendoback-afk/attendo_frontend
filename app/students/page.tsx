@@ -143,7 +143,7 @@ export default function StudentsPage() {
           </Select>
         </div>
 
-        <div className="dashboard-panel overflow-hidden">
+        <div className="dashboard-panel overflow-x-auto">
           <Table>
             <TableHeader className="bg-[#fcfbff]">
               <TableRow>

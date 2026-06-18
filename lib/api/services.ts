@@ -2,7 +2,10 @@ import { apiRequest, setAuthToken, toArray } from "@/lib/api/client";
 import type {
   AuthResponse,
   ClassRecord,
+  ClassPayload,
   CurrentUser,
+  DepartmentPayload,
+  DepartmentRecord,
   LoginPayload,
   ModulePayload,
   ModuleRecord,
@@ -42,9 +45,24 @@ export const modulesApi = {
   delete: (id: string) => apiRequest<void>(`/modules/${id}`, { method: "DELETE" }),
 };
 
+export const departmentsApi = {
+  list: async () => toArray<DepartmentRecord>(await apiRequest<unknown>("/departments")),
+  get: (id: string) => apiRequest<DepartmentRecord>(`/departments/${id}`),
+  create: (payload: DepartmentPayload) =>
+    apiRequest<DepartmentRecord>("/departments", { method: "POST", body: json(payload) }),
+  update: (id: string, payload: DepartmentPayload) =>
+    apiRequest<DepartmentRecord>(`/departments/${id}`, { method: "PUT", body: json(payload) }),
+  delete: (id: string) => apiRequest<void>(`/departments/${id}`, { method: "DELETE" }),
+};
+
 export const classesApi = {
   list: async () => toArray<ClassRecord>(await apiRequest<unknown>("/classes")),
   get: (id: string) => apiRequest<ClassRecord>(`/classes/${id}`),
+  create: (payload: ClassPayload) =>
+    apiRequest<ClassRecord>("/classes", { method: "POST", body: json(payload) }),
+  update: (id: string, payload: ClassPayload) =>
+    apiRequest<ClassRecord>(`/classes/${id}`, { method: "PUT", body: json(payload) }),
+  delete: (id: string) => apiRequest<void>(`/classes/${id}`, { method: "DELETE" }),
 };
 
 export const roomsApi = {

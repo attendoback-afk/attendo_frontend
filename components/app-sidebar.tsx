@@ -15,6 +15,7 @@ import {
   FileText,
   CalendarDays,
   X,
+  DoorOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Admins", href: "/admins", icon: ShieldCheck },
   { name: "Classes", href: "/classes", icon: NotebookTabs },
   { name: "Students", href: "/students", icon: UsersRound },
+  { name: "Rooms", href: "/rooms", icon: DoorOpen },
   { name: "Modules", href: "/modules", icon: BookOpen },
   { name: "Sessions", href: "/sessions", icon: CalendarDays },
   { name: "Schedules", href: "/schedules", icon: Calendar },
@@ -75,7 +77,7 @@ export function AppSidebar({
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 h-screen w-[262px] bg-white transition-transform duration-200 md:translate-x-0",
+          "fixed left-0 top-0 z-40 h-screen w-[280px] bg-white transition-transform duration-200 md:w-[300px] lg:w-[320px] xl:w-[340px] 2xl:w-[360px] md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -101,78 +103,81 @@ export function AppSidebar({
             </Button>
           </div>
 
-          <div className="relative flex-1 overflow-hidden">
-            <div className="absolute inset-x-0 bottom-0 top-[0px] z-20  bg-[url('/images/sidebar-bg.png')] bg-cover bg-top-left bg-no-repeat">
-              <div className="relative z-10 flex h-full flex-col px-5 pb-2 pt-[60px] text-white">
-                <nav className="flex-1">
-                  <ul className="space-y-[11px]">
-                    {navigation.map((item) => {
-                      const isActive =
-                        pathname === item.href ||
-                        (item.href !== "/" && pathname.startsWith(item.href));
+          <div className="relative flex-1 overflow-y-auto bg-[url('/images/sidebar-bg.png')] bg-cover bg-top-left bg-no-repeat">
+            <div className="relative z-10 flex h-full flex-col px-5 pt-[60px] text-white">
+              <nav className="flex-1">
+                <ul className="space-y-[11px]">
+                  {navigation.map((item) => {
+                    const isActive =
+                      pathname === item.href ||
+                      (item.href !== "/" && pathname.startsWith(item.href));
 
-                      return (
-                        <li key={item.name} className="w-[200px]">
-                          <Link
-                            href={item.href}
-                            onClick={onClose}
+                    return (
+                      <li key={item.name} className="w-[200px]">
+                        <Link
+                          href={item.href}
+                          onClick={onClose}
+                          className={cn(
+                            "flex h-[34px] items-center gap-4 rounded-full px-4 text-[14px] font-medium leading-none transition-colors",
+                            isActive
+                              ? "bg-white text-[#2e2a39] shadow-[0_10px_22px_rgba(0,0,0,0.12)]"
+                              : "text-[#fbfaff] hover:bg-white/8",
+                          )}
+                        >
+                          <item.icon
                             className={cn(
-                              "flex h-[34px] items-center gap-4 rounded-full px-4 text-[14px] font-medium leading-none transition-colors",
-                              isActive
-                                ? "bg-white text-[#2e2a39] shadow-[0_10px_22px_rgba(0,0,0,0.12)]"
-                                : "text-[#fbfaff] hover:bg-white/8",
+                              "h-[18px] w-[18px] shrink-0",
+                              isActive ? "text-[#565063]" : "text-white",
                             )}
-                          >
-                            <item.icon
-                              className={cn(
-                                "h-[18px] w-[18px] shrink-0",
-                                isActive ? "text-[#565063]" : "text-white",
-                              )}
-                              strokeWidth={1.9}
-                            />
-                            <span>{item.name}</span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </nav>
+                            strokeWidth={1.9}
+                          />
+                          <span>{item.name}</span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
 
-                <div className="mx-1 mt-6 border-t border-white/10 py-5">
-                  <div className="flex items-start gap-4">
-                    <Avatar className="h-[50px] w-[50px] border-0 bg-[#bdc2ff]">
-                      <AvatarFallback className="bg-[#bdc2ff] text-[18px] font-medium text-[#3b4264]">
-                        {initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-semibold leading-5 text-white">
-                        {user?.name ?? "Signed in user"}
-                      </p>
-                      <p className="truncate text-[12px] leading-4 text-[#807b95]">
-                        {user?.email ?? "Loading profile..."}
-                      </p>
-                      {user?.role ? (
-                        <div className="mt-2">
-                          <SoftStatusBadge
-                            tone={user.role === "MANAGER" ? "lavender" : "blue"}
-                          >
-                            {user.role}
-                          </SoftStatusBadge>
-                        </div>
-                      ) : null}
-                    </div>
+              <div className="mt-6 mb-5  mr-4 flex items-center justify-between gap-3 border-t border-white/10 py-5 px-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="h-[48px] w-[48px] shrink-0 border-2 border-white/20 bg-[#bdc2ff]">
+                    <AvatarFallback className="bg-[#bdc2ff] text-[16px] font-medium text-[#3b4264]">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold leading-5 text-white" title={user?.name}>
+                      {user?.name ?? "User"}
+                    </p>
+                    <p className="truncate text-[12px] leading-4 text-[#b0aac4]" title={user?.email}>
+                      {user?.email ?? "Loading..."}
+                    </p>
+                    {user?.role ? (
+                      <div className="mt-1.5">
+                        <SoftStatusBadge
+                          tone={user.role === "MANAGER" ? "lavender" : "blue"}
+                          className="text-[10px]"
+                        >
+                          {user.role}
+                        </SoftStatusBadge>
+                      </div>
+                    ) : null}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="mt-4 h-9 w-full justify-start rounded-full px-4 text-[#fbfaff] hover:bg-white/8 hover:text-white"
-                    onClick={logout}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </Button>
                 </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 rounded-lg text-[#fbfaff] transition-all hover:bg-white/10 hover:text-white active:bg-white/15"
+                  onClick={() => {
+                    onClose();
+                    logout();
+                  }}
+                  title="Sign out of your account"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>

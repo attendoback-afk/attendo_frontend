@@ -21,13 +21,13 @@ export function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="dashboard-shell">
+    <>
       <AppSidebar
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
       />
-      <main className="min-h-screen w-full md:ml-[250px] md:w-[calc(100vw-250px)]">
-        <div className="dashboard-main w-full max-w-none">
+      <main className="min-h-screen w-full md:ml-[300px] lg:ml-[320px] xl:ml-[340px] 2xl:ml-[360px]">
+        <div className="dashboard-main">
           <div className="mb-6 flex items-center justify-between md:hidden">
             <Button
               variant="outline"
@@ -51,6 +51,6 @@ export function DashboardLayout({
           {children}
         </div>
       </main>
-    </div>
+    </>
   );
 }

@@ -58,9 +58,9 @@ export type ClassFormValues = InferType<typeof classFormSchema>;
 export type ClassPayload = {
   name: string;
   classCode: string;
-  year: number;
   departmentId: number;
-  description: string | null;
+  year: number;
+  description: string;
 };
 
 export type ModuleFormValues = InferType<typeof moduleFormSchema>;

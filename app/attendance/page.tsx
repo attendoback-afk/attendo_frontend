@@ -59,7 +59,7 @@ export default function AttendancePage() {
           <Input placeholder="Search Name..." />
         </div>
 
-        <div className="overflow-hidden rounded-[14px] border border-border bg-card">
+        <div className="overflow-x-auto rounded-[14px] border border-border bg-card">
           <div className="px-1 pb-1 pt-6 md:px-0">
             <h3 className="px-5 text-[18px] font-semibold tracking-[-0.02em] text-foreground">
               Attendance Sheet for the 3rd Year IT Department: March 2026

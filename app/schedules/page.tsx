@@ -88,7 +88,7 @@ export default function SchedulesPage() {
           </Select>
         </div>
 
-        <div className="dashboard-panel overflow-hidden">
+        <div className="dashboard-panel overflow-x-auto">
           <div className="grid min-w-[920px] grid-cols-[110px_repeat(5,minmax(150px,1fr))]">
             <div className="bg-[#fcfbff] px-4 py-4 text-[14px] font-semibold">Time</div>
             {days.map((day) => (

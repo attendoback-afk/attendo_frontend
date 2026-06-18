@@ -54,14 +54,37 @@ export type ModulePayload = {
   description?: string | null;
 };
 
+export type DepartmentRecord = ApiEntity & {
+  name: string;
+  description?: string | null;
+};
+
+export type DepartmentPayload = {
+  name: string;
+  description: string;
+};
+
 export type ClassRecord = ApiEntity & {
   name: string;
-  code: string;
-  departmentId?: string;
+  code?: string;
+  classCode?: string;
+  year?: number | string | null;
+  level?: string | number | null;
+  description?: string | null;
+  departmentId?: string | number;
   department?: {
-    id: string;
+    id: string | number;
     name: string;
+    description?: string | null;
   };
+};
+
+export type ClassPayload = {
+  name: string;
+  classCode: string;
+  departmentId: number;
+  year: number;
+  description: string;
 };
 
 export type RoomRecord = ApiEntity & {

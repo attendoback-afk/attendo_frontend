@@ -1,5 +1,5 @@
 import type { EntityFormDefinition } from "@/types/form-builder";
-import type { DepartmentPayload } from "@/types/entity-form-values";
+import type { DepartmentPayload } from "@/lib/api/types";
 import { departmentFormSchema } from "@/validators/department-form-schema";
 
 export const departmentFormDefinition: EntityFormDefinition<

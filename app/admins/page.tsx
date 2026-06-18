@@ -101,7 +101,7 @@ export default function AdminsPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
 
-        <div className="dashboard-panel overflow-hidden">
+        <div className="dashboard-panel overflow-x-auto">
           <Table>
             <TableHeader className="bg-[#fcfbff]">
               <TableRow>

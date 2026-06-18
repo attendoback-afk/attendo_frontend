@@ -1,12 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Building2, Pencil, Plus, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { DepartmentEditDialog } from "@/components/departments/department-edit-dialog";
-import { PageActionButton, SearchInput } from "@/components/dashboard-kit";
+import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { PageActionButton, SearchInput } from "@/components/dashboard-kit";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,133 +17,239 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useDepartments } from "@/hooks/use-departments";
-import type { Department } from "@/lib/departments-store";
-import type { DepartmentFormValues } from "@/types/entity-form-values";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { departmentsApi } from "@/lib/api/services";
+import type { DepartmentRecord } from "@/lib/api/types";
+
+const PAGE_SIZE = 6;
+
+function normalize(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase();
+}
+
+function formatDate(value: string | undefined) {
+  if (!value) return "N/A";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+}
 
 export default function DepartmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(
-    null,
-  );
-  const [departmentToDelete, setDepartmentToDelete] =
-    useState<Department | null>(null);
+  const [departments, setDepartments] = useState<DepartmentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [departmentToDelete, setDepartmentToDelete] = useState<DepartmentRecord | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
-  const { departments, updateDepartment, deleteDepartment } = useDepartments();
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDepartments() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const records = await departmentsApi.list();
+
+        if (active) {
+          setDepartments(records);
+        }
+      } catch (loadError) {
+        if (active) {
+          setError(loadError instanceof Error ? loadError.message : "Unable to load departments.");
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadDepartments();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredDepartments = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const query = normalize(searchQuery);
 
-    if (!normalizedQuery) {
+    if (!query) {
       return departments;
     }
 
     return departments.filter((department) =>
       [department.name, department.description].some((value) =>
-        value.toLowerCase().includes(normalizedQuery),
+        normalize(value).includes(query),
       ),
     );
   }, [departments, searchQuery]);
 
-  const handleEditSubmit = async (values: DepartmentFormValues) => {
-    if (!editingDepartment) {
-      return;
-    }
+  const totalPages = Math.max(1, Math.ceil(filteredDepartments.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedDepartments = filteredDepartments.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
-    updateDepartment(editingDepartment.id, values);
-    toast({
-      title: "Department updated",
-      description: "The department details were saved successfully.",
-    });
-  };
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!departmentToDelete) {
       return;
     }
 
-    deleteDepartment(departmentToDelete.id);
-    toast({
-      title: "Department deleted",
-      description: "The department has been removed.",
-    });
-    setDepartmentToDelete(null);
+    try {
+      setDeleting(true);
+      await departmentsApi.delete(departmentToDelete.id);
+      setDepartments((current) => current.filter((item) => item.id !== departmentToDelete.id));
+      toast({ title: "Department deleted", description: "The department has been removed." });
+      setDepartmentToDelete(null);
+    } catch (deleteError) {
+      toast({
+        title: "Unable to delete department",
+        description:
+          deleteError instanceof Error ? deleteError.message : "Please try again in a moment.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
-    <>
-      <DashboardLayout
-        title="Department Management"
-        description="Organize and manage departments"
-        action={
-          <Link href="/departments/new">
-            <PageActionButton icon={Plus}>Add Department</PageActionButton>
-          </Link>
-        }
-      >
-        <div className="dashboard-page">
-          <SearchInput
-            placeholder="Search departments by name or description..."
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-          />
+    <DashboardLayout
+      title="Department Management"
+      description="Create, update, and manage academic departments"
+      action={
+        <Link href="/departments/create">
+          <PageActionButton icon={Plus}>Add Department</PageActionButton>
+        </Link>
+      }
+    >
+      <div className="dashboard-page">
+        <SearchInput
+          placeholder="Search departments by name or description..."
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+        />
 
-          <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
-            {filteredDepartments.map((department) => (
-              <Card key={department.id} className="dashboard-panel gap-0 py-0">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-[#f6f2ff]">
-                      <Building2 className="h-6 w-6 text-[#958dc9]" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-lg"
-                        onClick={() => setEditingDepartment(department)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                        <span className="sr-only">Edit department</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-lg text-[#ff7f89] hover:text-[#ff7f89]"
-                        onClick={() => setDepartmentToDelete(department)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Delete department</span>
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-4 min-w-0 flex-1">
-                    <h3 className="text-[18px] font-semibold leading-8 tracking-[-0.02em] text-foreground">
-                      {department.name}
-                    </h3>
-                    <p className="text-[14px] leading-6 text-muted-foreground">
-                      {department.description}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        <Card className="dashboard-panel gap-0 overflow-x-auto py-0">
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader className="bg-[#fcfbff]">
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Created Date</TableHead>
+                  <TableHead className="w-[170px] text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
+                      Loading departments...
+                    </TableCell>
+                  </TableRow>
+                ) : error ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-10 text-center text-destructive">
+                      {error}
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedDepartments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
+                      No departments found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedDepartments.map((department) => (
+                    <TableRow key={department.id}>
+                      <TableCell className="font-medium text-[#6f6a7e]">
+                        {department.name}
+                      </TableCell>
+                      <TableCell>{department.description ?? "N/A"}</TableCell>
+                      <TableCell>{formatDate(department.createdAt)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button asChild type="button" variant="ghost" size="icon-sm" className="rounded-lg">
+                            <Link href={`/departments/${department.id}`}>
+                              <Eye className="h-4 w-4" />
+                              <span className="sr-only">View department</span>
+                            </Link>
+                          </Button>
+                          <Button asChild type="button" variant="ghost" size="icon-sm" className="rounded-lg">
+                            <Link href={`/departments/${department.id}/edit`}>
+                              <Pencil className="h-4 w-4" />
+                              <span className="sr-only">Edit department</span>
+                            </Link>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="rounded-lg text-[#ff7f89] hover:text-[#ff7f89]"
+                            onClick={() => setDepartmentToDelete(department)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete department</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+          <p className="text-[13px] text-muted-foreground">
+            Showing {filteredDepartments.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}-
+            {Math.min(currentPage * PAGE_SIZE, filteredDepartments.length)} of{" "}
+            {filteredDepartments.length} departments
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl"
+              disabled={currentPage === 1}
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+            >
+              Previous
+            </Button>
+            <div className="rounded-xl border border-border bg-white px-4 py-2 text-[14px] text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl"
+              disabled={currentPage === totalPages}
+              onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+            >
+              Next
+            </Button>
           </div>
         </div>
-      </DashboardLayout>
-
-      <DepartmentEditDialog
-        department={editingDepartment}
-        open={Boolean(editingDepartment)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingDepartment(null);
-          }
-        }}
-        onSubmit={handleEditSubmit}
-      />
+      </div>
 
       <AlertDialog
         open={Boolean(departmentToDelete)}
@@ -166,12 +270,12 @@ export default function DepartmentsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-lg">Cancel</AlertDialogCancel>
-            <AlertDialogAction className="rounded-lg" onClick={handleDelete}>
-              Delete
+            <AlertDialogAction className="rounded-lg" disabled={deleting} onClick={handleDelete}>
+              {deleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </DashboardLayout>
   );
 }

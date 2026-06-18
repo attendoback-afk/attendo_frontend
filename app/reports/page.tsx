@@ -25,7 +25,7 @@ export default function ReportsPage() {
       title="Reports"
       description="Download attendance and performance reports"
     >
-      <div className="dashboard-panel overflow-hidden">
+      <div className="dashboard-panel overflow-x-auto">
         <Table>
           <TableHeader className="bg-[#fcfbff]">
             <TableRow>

@@ -235,7 +235,7 @@ export default function SessionsPage() {
           </Select>
         </div>
 
-        <Card className="dashboard-panel gap-0 overflow-hidden py-0">
+        <Card className="dashboard-panel gap-0 overflow-x-auto py-0">
           <CardContent className="p-0">
             <Table>
               <TableHeader className="bg-[#fcfbff]">

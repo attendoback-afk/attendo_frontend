@@ -1,5 +1,5 @@
 import type { EntityFormDefinition } from "@/types/form-builder";
-import type { ClassPayload } from "@/types/entity-form-values";
+import type { ClassPayload } from "@/lib/api/types";
 import { classFormSchema } from "@/validators/class-form-schema";
 
 const yearOptions = [
@@ -16,20 +16,20 @@ export const classFormDefinition: EntityFormDefinition<typeof classFormSchema, C
   defaultValues: {
     name: "",
     classCode: "",
-    year: "",
     departmentId: "",
+    year: "",
     description: "",
   },
   fields: [
     { name: "name", label: "Class Name", type: "text", placeholder: "Enter class name", section: "Class Information" },
-    { name: "classCode", label: "Class Code", type: "text", placeholder: "e.g. ITA-1", section: "Class Information" },
+    { name: "classCode", label: "Class Code", type: "text", placeholder: "e.g. CS-1A", section: "Class Information" },
+    { name: "departmentId", label: "Department", type: "select", options: [], placeholder: "Select department", section: "Class Information" },
     { name: "year", label: "Year", type: "select", options: yearOptions, placeholder: "Select year", section: "Class Information" },
-    { name: "departmentId", label: "Department", type: "select", optionsKey: "departments", placeholder: "Select department", section: "Class Information" },
     {
       name: "description",
       label: "Description",
       type: "textarea",
-      placeholder: "Add optional class notes",
+      placeholder: "Add class notes",
       section: "Class Information",
       colSpan: 3,
     },
@@ -37,8 +37,8 @@ export const classFormDefinition: EntityFormDefinition<typeof classFormSchema, C
   formatPayload: (values) => ({
     name: values.name.trim(),
     classCode: values.classCode.trim().toUpperCase(),
-    year: Number(values.year),
     departmentId: Number(values.departmentId),
-    description: values.description.trim() ? values.description.trim() : null,
+    year: Number(values.year),
+    description: values.description?.trim() ?? "",
   }),
 };
