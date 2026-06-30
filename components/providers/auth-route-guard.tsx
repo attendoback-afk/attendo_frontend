@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
-import { getRouteAccess, PUBLIC_PATHS } from "@/lib/auth";
+import { getAccessibleHomeRoute, getRouteAccess, PUBLIC_PATHS } from "@/lib/auth";
 
 const LOGIN_PATH = "/login";
 const UNAUTHORIZED_PATH = "/unauthorized";
@@ -30,12 +30,22 @@ function AuthRouteGuardInner({ children }: { children: ReactNode }) {
     if (access.public) {
       if (pathname === LOGIN_PATH && status === "authenticated") {
         const next = searchParams.get("next");
-        router.replace(next && next.startsWith("/") ? next : "/");
+        router.replace(
+          next && next.startsWith("/")
+            ? next
+            : getAccessibleHomeRoute(user),
+        );
         setChecking(true);
         return;
       }
 
       setChecking(false);
+      return;
+    }
+
+    if (pathname === "/" && status === "authenticated") {
+      router.replace(getAccessibleHomeRoute(user));
+      setChecking(true);
       return;
     }
 

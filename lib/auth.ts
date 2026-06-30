@@ -12,8 +12,27 @@ export function resolveRole(
   if (typeof input === "string") {
     return AUTH_ROLES.includes(input as AuthRole) ? input : null;
   }
+  
+  return input.user.role as any;
+}
 
-  return input.staff.role.name as any;
+export function getDefaultRouteForRole(role: AuthRole | null | undefined) {
+  switch (role) {
+    case "MANAGER":
+      return "/";
+    case "PROFESSOR":
+      return "/modules";
+    case "ASSISTANT":
+      return "/sessions";
+    default:
+      return "/";
+  }
+}
+
+export function getAccessibleHomeRoute(
+  input: AuthRole | CurrentUser | null | undefined,
+) {
+  return getDefaultRouteForRole(resolveRole(input));
 }
 
 export function isManager(input: AuthRole | CurrentUser | null | undefined) {

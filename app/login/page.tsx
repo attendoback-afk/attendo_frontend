@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getAccessibleHomeRoute } from "@/lib/auth";
 
 const loginSchema = yup
   .object({
@@ -48,7 +49,7 @@ function LoginForm() {
     setSubmitError(null);
 
     try {
-      await login(
+      const currentUser = await login(
         {
           email: values.email.trim().toLowerCase(),
           password: values.password,
@@ -57,7 +58,11 @@ function LoginForm() {
       );
 
       const next = searchParams.get("next");
-      router.replace(next && next.startsWith("/") ? next : "/");
+      router.replace(
+        next && next.startsWith("/")
+          ? next
+          : getAccessibleHomeRoute(currentUser),
+      );
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Unable to sign in. Please try again.");
     }

@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SoftStatusBadge } from "@/components/dashboard-kit";
 import { useAuth } from "@/components/providers/auth-provider";
+import { canAccessRoute } from "@/lib/auth";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutGrid },
@@ -45,20 +46,10 @@ export function AppSidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
-  const { user, logout, canAccess } = useAuth();
-  const visibleNavigation = navigation.filter((item) => {
-    if (item.href === "/admins" || item.href === "/departments") {
-      return canAccess(["MANAGER"]);
-    }
-
-    if (item.href === "/modules" || item.href === "/sessions") {
-      return canAccess(["MANAGER", "PROFESSOR", "ASSISTANT"]);
-    }
-
-    return true;
-  });
+  const { user, logout } = useAuth();
+  const visibleNavigation = navigation.filter((item) => canAccessRoute(user, item.href));
   const initials =
-    user?.name
+    user?.user?.name
       ?.split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
@@ -107,7 +98,7 @@ export function AppSidebar({
             <div className="relative z-10 flex h-full flex-col px-5 pt-[60px] text-white">
               <nav className="flex-1">
                 <ul className="space-y-[11px]">
-                  {navigation.map((item) => {
+                  {visibleNavigation.map((item) => {
                     const isActive =
                       pathname === item.href ||
                       (item.href !== "/" && pathname.startsWith(item.href));
@@ -141,25 +132,33 @@ export function AppSidebar({
 
               <div className="mt-6 mb-5  mr-4 flex items-center justify-between gap-3 border-t border-white/10 py-5 px-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <Avatar className="h-[48px] w-[48px] shrink-0 border-2 border-white/20 bg-[#bdc2ff]">
+                  <Avatar className="h-[62px] w-[62px] shrink-0 border-2 border-white/20 bg-[#bdc2ff]">
                     <AvatarFallback className="bg-[#bdc2ff] text-[16px] font-medium text-[#3b4264]">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold leading-5 text-white" title={user?.name}>
-                      {user?.name ?? "User"}
+                    <p
+                      className="truncate text-[14px] font-semibold leading-5 text-white"
+                      title={user?.user?.name}
+                    >
+                      {user?.user?.name ?? "User"}
                     </p>
-                    <p className="truncate text-[12px] leading-4 text-[#b0aac4]" title={user?.email}>
-                      {user?.email ?? "Loading..."}
+                    <p
+                      className="truncate text-[12px] leading-4 text-[#b0aac4]"
+                      title={user?.user?.email}
+                    >
+                      {user?.user?.email ?? "Loading..."}
                     </p>
-                    {user?.role ? (
+                    {user?.user?.role ? (
                       <div className="mt-1.5">
                         <SoftStatusBadge
-                          tone={user.role === "MANAGER" ? "lavender" : "blue"}
+                          tone={
+                            user?.user.role === "MANAGER" ? "lavender" : "blue"
+                          }
                           className="text-[10px]"
                         >
-                          {user.role}
+                          {user?.user.role}
                         </SoftStatusBadge>
                       </div>
                     ) : null}

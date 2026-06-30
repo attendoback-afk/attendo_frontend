@@ -10,7 +10,12 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, clearAuthToken, getAuthToken, setAuthToken } from "@/lib/api/client";
+import {
+  ApiError,
+  clearAuthToken,
+  getAuthToken,
+  setAuthToken,
+} from "@/lib/api/client";
 import { authApi } from "@/lib/api/services";
 import type { AuthRole, CurrentUser, LoginPayload } from "@/lib/api/types";
 import { hasAnyRole, isAssistant, isManager, isProfessor } from "@/lib/auth";
@@ -28,7 +33,10 @@ type AuthContextValue = {
   loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  login: (payload: LoginPayload, options?: LoginOptions) => Promise<CurrentUser>;
+  login: (
+    payload: LoginPayload,
+    options?: LoginOptions,
+  ) => Promise<CurrentUser>;
   logout: () => void;
   refreshCurrentUser: () => Promise<CurrentUser | null>;
   hasRole: (role: AuthRole) => boolean;
@@ -39,7 +47,9 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Unable to load your profile.";
+  return error instanceof Error
+    ? error.message
+    : "Unable to load your profile.";
 }
 
 function isUnauthorizedError(error: unknown) {
@@ -158,7 +168,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     window.addEventListener("attendo:unauthorized", handleUnauthorized);
-    return () => window.removeEventListener("attendo:unauthorized", handleUnauthorized);
+    return () =>
+      window.removeEventListener("attendo:unauthorized", handleUnauthorized);
   }, [resetAuth]);
 
   const login = useCallback(
@@ -166,7 +177,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
 
       try {
-        const response = await authApi.login(payload, { remember: options.remember ?? true });
+        const response = await authApi.login(payload, {
+          remember: options.remember ?? true,
+        });
         const nextToken = response.token ?? response.accessToken;
 
         if (!nextToken) {
@@ -214,14 +227,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       refreshCurrentUser,
-      hasRole: (role) => user?.role === role,
+      hasRole: (role) => user?.user?.role === role,
       hasAnyRole: (roles) => (user ? hasAnyRole(user, roles) : false),
       canAccess: (roles) => {
         if (!user) {
           return false;
         }
 
-        if (user.role === "MANAGER") {
+        if (user.user.role === "MANAGER") {
           return true;
         }
 
@@ -232,7 +245,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return hasAnyRole(user, roles);
       },
     }),
-    [bootstrapping, error, login, logout, refreshCurrentUser, status, token, user],
+    [
+      bootstrapping,
+      error,
+      login,
+      logout,
+      refreshCurrentUser,
+      status,
+      token,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

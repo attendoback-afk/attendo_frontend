@@ -23,13 +23,10 @@ export const DAY_OF_WEEK_LABELS: Record<DayOfWeek, string> = {
 };
 
 export type CurrentUser = ApiEntity & {
-  name: string;
-  email: string;
-  role: AuthRole;
-  staff: {
-    role: {
-      name: AuthRole;
-    };
+  user: {
+    name: string;
+    email: string;
+    role: AuthRole;
   };
 };
 
