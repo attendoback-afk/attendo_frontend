@@ -22,50 +22,67 @@ function AuthRouteGuardInner({ children }: { children: ReactNode }) {
   const access = useMemo(() => getRouteAccess(pathname), [pathname]);
 
   useEffect(() => {
+    // 1. While auth is loading, show the loading UI and make no routing decisions.
     if (loading || status === "loading") {
       setChecking(true);
       return;
     }
 
+    // 2. Public route handling (including special handling for /login when authenticated).
     if (access.public) {
       if (pathname === LOGIN_PATH && status === "authenticated") {
         const next = searchParams.get("next");
-        router.replace(
-          next && next.startsWith("/")
-            ? next
-            : getAccessibleHomeRoute(user),
-        );
-        setChecking(true);
-        return;
+
+        if (next && next.startsWith("/")) {
+          const nextAccess = getRouteAccess(next);
+          const canGoToNext = nextAccess.public || !nextAccess.allowedRoles || canAccess(nextAccess.allowedRoles);
+          const target = canGoToNext ? next : getAccessibleHomeRoute(user);
+
+          if (target !== pathname) {
+            router.replace(target);
+            return;
+          }
+        } else {
+          const target = getAccessibleHomeRoute(user);
+          if (target !== pathname) {
+            router.replace(target);
+            return;
+          }
+        }
       }
 
       setChecking(false);
       return;
     }
 
-    if (pathname === "/" && status === "authenticated") {
-      router.replace(getAccessibleHomeRoute(user));
-      setChecking(true);
-      return;
-    }
-
-    if (status === "error") {
-      setChecking(false);
-      return;
-    }
-
+    // 3. Protected route: if not authenticated, redirect to login once.
     if (!user || status !== "authenticated") {
-      router.replace(`${LOGIN_PATH}?next=${encodeURIComponent(pathname)}`);
-      setChecking(true);
-      return;
+      const loginTarget = `${LOGIN_PATH}?next=${encodeURIComponent(pathname)}`;
+      if (loginTarget !== pathname) {
+        router.replace(loginTarget);
+        return;
+      }
     }
 
+    // 4. If authenticated and on the root path, redirect to the accessible home route.
+    if (status === "authenticated" && pathname === "/") {
+      const home = getAccessibleHomeRoute(user);
+      if (home !== pathname) {
+        router.replace(home);
+        return;
+      }
+    }
+
+    // 5. Role authorization check for protected routes.
     if (access.allowedRoles && access.allowedRoles.length > 0 && !canAccess(access.allowedRoles)) {
-      router.replace(`${UNAUTHORIZED_PATH}?next=${encodeURIComponent(pathname)}`);
-      setChecking(true);
-      return;
+      const unauthTarget = `${UNAUTHORIZED_PATH}?next=${encodeURIComponent(pathname)}`;
+      if (unauthTarget !== pathname) {
+        router.replace(unauthTarget);
+        return;
+      }
     }
 
+    // 6. No redirects necessary — allow rendering.
     setChecking(false);
   }, [access.allowedRoles, access.public, canAccess, loading, pathname, router, searchParams, status, user]);
 

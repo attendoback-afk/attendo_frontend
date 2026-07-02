@@ -2,6 +2,7 @@
 
 import { Check, Minus, X } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { LiveAttendanceSessionsSection } from "@/components/live-session/live-attendance-sessions-section";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -46,6 +47,8 @@ export default function AttendancePage() {
       description="Manage weekly timetable and class schedules"
     >
       <div className="dashboard-page">
+        <LiveAttendanceSessionsSection />
+{/* 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
           {["Select Year...", "Select Department...", "Select Month..."].map((placeholder, index) => (
             <Select key={placeholder}>
@@ -101,7 +104,7 @@ export default function AttendancePage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </div> */}
       </div>
     </DashboardLayout>
   );

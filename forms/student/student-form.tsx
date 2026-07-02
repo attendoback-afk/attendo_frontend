@@ -30,6 +30,26 @@ const defaultValues: StudentFormValues = {
   classId: "",
 };
 
+function normalizeSelectValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return String(value);
+  }
+
+  if (value && typeof value === "object") {
+    const candidate = value as { toString?: () => string };
+    if (typeof candidate.toString === "function") {
+      const stringValue = candidate.toString();
+      return stringValue === "[object Object]" ? "" : stringValue;
+    }
+  }
+
+  return "";
+}
+
 export function StudentForm({
   cancelHref,
   defaultValue,
@@ -52,20 +72,24 @@ export function StudentForm({
     : studentFormSchema;
 
   const methods = useForm<StudentFormValues>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(schema as yup.ObjectSchema<StudentFormValues>),
     defaultValues: {
       ...defaultValues,
-      fullName: defaultValue?.user.fullName ?? "",
-      email: defaultValue?.user.email ?? "",
+      fullName: (defaultValue as StudentRecord | null | undefined)?.user?.fullName ?? "",
+      email: (defaultValue as StudentRecord | null | undefined)?.user?.email ?? "",
       password: "",
-      studentCode: defaultValue?.studentCode ?? "",
-      classId: defaultValue?.classId ?? "",
+      studentCode: (defaultValue as StudentRecord | null | undefined)?.studentCode ?? "",
+      classId: normalizeSelectValue(
+        (defaultValue as StudentRecord | null | undefined)?.classId ?? "",
+      ),
     },
     mode: "onBlur",
     reValidateMode: "onChange",
   });
 
-  const handleSubmit = methods.handleSubmit(onSubmit);
+  const handleSubmit = methods.handleSubmit(async (values: StudentFormValues) => {
+    await onSubmit(values);
+  });
 
   return (
     <Form {...methods}>
@@ -132,23 +156,40 @@ export function StudentForm({
                 <Controller
                   control={methods.control}
                   name="classId"
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger id="name">
-                        <SelectValue placeholder="Select class" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classOptions.map((classRecord) => (
-                          <SelectItem
-                            key={classRecord.id}
-                            value={classRecord.id}
-                          >
-                            {classRecord.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  render={({ field }) => {
+                    const normalizedValue = normalizeSelectValue(field.value);
+                    const selectedClass = classOptions.find(
+                      (classRecord) =>
+                        normalizeSelectValue(classRecord.id) === normalizedValue,
+                    );
+
+                    return (
+                      <Select
+                        value={selectedClass ? normalizedValue : ""}
+                        onValueChange={(nextValue) => field.onChange(nextValue)}
+                      >
+                        <SelectTrigger id="name">
+                          <SelectValue placeholder="Select class">
+                            {selectedClass ? selectedClass.name : null}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {classOptions.map((classRecord) => {
+                            const optionValue = normalizeSelectValue(classRecord.id);
+
+                            return (
+                              <SelectItem
+                                key={optionValue || classRecord.name}
+                                value={optionValue}
+                              >
+                                {classRecord.name}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    );
+                  }}
                 />
                 {methods.formState.errors.classId?.message ? (
                   <p className="text-sm text-destructive">

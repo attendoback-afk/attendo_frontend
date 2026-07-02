@@ -73,6 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBootstrapping(false);
   }, []);
 
+  function promiseWithTimeout<T>(p: Promise<T>, ms: number, label?: string) {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const timeoutPromise = new Promise<T>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(`Timeout calling ${label ?? 'promise'}`)), ms);
+    });
+
+    return Promise.race([p, timeoutPromise]) as Promise<T>;
+  }
+
   const refreshCurrentUser = useCallback(async () => {
     const storedToken = getAuthToken();
 
@@ -87,11 +97,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBootstrapping(true);
 
     try {
-      const currentUser = await authApi.me();
+      console.debug("auth:refreshCurrentUser: calling /auth/me", { storedToken });
+      const timeoutMs = Number(process.env.NEXT_PUBLIC_AUTH_ME_TIMEOUT_MS ?? 10000);
+      const currentUser = await promiseWithTimeout(authApi.me(), timeoutMs, "/auth/me");
+      console.debug("auth:refreshCurrentUser: received user", currentUser);
       setUser(currentUser);
       setStatus("authenticated");
       return currentUser;
     } catch (refreshError) {
+      console.debug("auth:refreshCurrentUser: error", refreshError);
       setError(getErrorMessage(refreshError));
 
       if (isUnauthorizedError(refreshError)) {
@@ -122,12 +136,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        setTokenState(storedToken);
-        setStatus("loading");
-        setError(null);
-        setBootstrapping(true);
+      console.debug("auth:bootstrapSession: starting", { storedToken });
+      setTokenState(storedToken);
+      setStatus("loading");
+      setError(null);
+      setBootstrapping(true);
 
-        const currentUser = await authApi.me();
+      const timeoutMs = Number(process.env.NEXT_PUBLIC_AUTH_ME_TIMEOUT_MS ?? 10000);
+      const currentUser = await promiseWithTimeout(authApi.me(), timeoutMs, "/auth/me");
+
+      console.debug("auth:bootstrapSession: received user", currentUser);
 
         if (!mounted) {
           return;

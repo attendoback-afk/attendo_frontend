@@ -91,11 +91,11 @@ export default function AdminsPage() {
 
   const handleDelete = async () => {
     if (!adminToDelete) return;
-    setDeletingId(adminToDelete.id);
+    setDeletingId(adminToDelete.userId);
     try {
-      await staffApi.delete(adminToDelete.id);
+      await staffApi.delete(adminToDelete.userId);
       setAdmins((current) =>
-        current.filter((item) => item.id !== adminToDelete.id),
+        current.filter((item) => item.userId !== adminToDelete.userId),
       );
       toast({
         title: "Admin deleted",

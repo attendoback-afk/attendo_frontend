@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Eye, Pencil, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Eye, Pencil, Plus, Radio, Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageActionButton, SearchInput } from "@/components/dashboard-kit";
 import { Button } from "@/components/ui/button";
@@ -34,7 +36,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { liveSessionKeys } from "@/hooks/useLiveSession";
 import { classesApi, modulesApi, roomsApi, sessionsApi } from "@/lib/api/services";
+import { startLiveSession } from "@/services/live";
 import {
   DAY_OF_WEEK_LABELS,
   DAY_OF_WEEK_VALUES,
@@ -103,6 +107,8 @@ function buildEntityLabel(record: ClassRecord | ModuleRecord | RoomRecord | null
 }
 
 export default function SessionsPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [classFilter, setClassFilter] = useState("all");
   const [moduleFilter, setModuleFilter] = useState("all");
@@ -117,6 +123,29 @@ export default function SessionsPage() {
   const [page, setPage] = useState(1);
   const [sessionToDelete, setSessionToDelete] = useState<SessionRecord | null>(null);
   const { toast } = useToast();
+  const startLiveMutation = useMutation({
+    mutationFn: (sessionId: string) => startLiveSession(sessionId),
+    onSuccess: (liveSession) => {
+      void queryClient.invalidateQueries({ queryKey: liveSessionKeys.mySessions() });
+      toast({
+        title: "Live session started",
+        description: "The QR code is ready for attendance.",
+      });
+      router.push(
+        `/sessions/live/${liveSession.sessionId}?academicSessionId=${liveSession.academicSessionId}`,
+      );
+    },
+    onError: (startError) => {
+      toast({
+        title: "Unable to start live session",
+        description:
+          startError instanceof Error
+            ? startError.message
+            : "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   useEffect(() => {
     let active = true;
@@ -185,7 +214,7 @@ export default function SessionsPage() {
         session.dayOfWeek,
         session.startTime,
         session.endTime,
-      ].some((value) => value.toLowerCase().includes(query));
+      ].some((value) => String(value).toLowerCase().includes(query));
     });
   }, [classFilter, classMap, dayFilter, moduleFilter, modules, roomFilter, roomMap, searchQuery, sessions]);
 
@@ -216,9 +245,16 @@ export default function SessionsPage() {
       title="Sessions Management"
       description="Schedule, review, and maintain session records"
       action={
-        <Link href="/sessions/create">
-          <PageActionButton icon={Plus}>Add Session</PageActionButton>
-        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link href="/sessions/live">
+            <PageActionButton icon={Radio} variant="outline">
+              Live Session
+            </PageActionButton>
+          </Link>
+          <Link href="/sessions/create">
+            <PageActionButton icon={Plus}>Add Session</PageActionButton>
+          </Link>
+        </div>
       }
     >
       <div className="dashboard-page">
@@ -293,7 +329,7 @@ export default function SessionsPage() {
                   <TableHead>Room</TableHead>
                   <TableHead>Day</TableHead>
                   <TableHead>Time</TableHead>
-                  <TableHead className="w-[170px] text-right">Actions</TableHead>
+                  <TableHead className="w-[210px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -341,6 +377,18 @@ export default function SessionsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="rounded-lg text-[#78ae5e] hover:text-[#78ae5e]"
+                              disabled={startLiveMutation.isPending}
+                              title="Start live session"
+                              onClick={() => startLiveMutation.mutate(session.id)}
+                            >
+                              <Radio className="h-4 w-4" />
+                              <span className="sr-only">Start live session</span>
+                            </Button>
                             <Button asChild type="button" variant="ghost" size="icon-sm" className="rounded-lg">
                               <Link href={`/sessions/${session.id}`}>
                                 <Eye className="h-4 w-4" />
