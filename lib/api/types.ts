@@ -149,6 +149,7 @@ export type StaffUpdatePayload = {
 };
 
 export type StudentRecord = ApiEntity & {
+  userId?: string | number;
   fullName: string;
   email: string;
   studentCode: string;

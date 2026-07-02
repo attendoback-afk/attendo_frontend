@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLiveSessionUrl } from "@/services/live";
 import {
   Table,
   TableBody,
@@ -113,7 +114,7 @@ export function LiveAttendanceSessionsSection() {
                         </Button>
                         {session.status === "ACTIVE" ? (
                           <Button asChild type="button" size="sm" className="rounded-lg">
-                            <Link href={`/sessions/live/${session.id}`}>
+                            <Link href={getLiveSessionUrl(session)}>
                               <Play className="h-4 w-4" />
                               Open Live Session
                             </Link>

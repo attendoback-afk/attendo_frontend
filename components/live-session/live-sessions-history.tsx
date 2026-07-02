@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { closeLiveSession } from "@/services/live";
+import { closeLiveSession, getLiveSessionUrl } from "@/services/live";
 import {
   liveSessionKeys,
   useMyLiveSessions,
@@ -104,7 +104,7 @@ export function LiveSessionsHistory() {
                           {isActive ? (
                             <>
                               <Button asChild type="button" variant="outline" size="sm" className="rounded-lg">
-                                <Link href={`/sessions/live/${session.id}`}>
+                                <Link href={getLiveSessionUrl(session)}>
                                   <Play className="h-4 w-4" />
                                   Open Live Session
                                 </Link>
@@ -123,7 +123,7 @@ export function LiveSessionsHistory() {
                             </>
                           ) : (
                             <Button asChild type="button" variant="outline" size="sm" className="rounded-lg">
-                              <Link href={`/sessions/live/${session.id}`}>
+                              <Link href={getLiveSessionUrl(session)}>
                                 <Eye className="h-4 w-4" />
                                 View Attendance
                               </Link>

@@ -4,9 +4,60 @@ import type {
   LiveSessionListItem,
   LiveSessionRecordsResponse,
   LiveSessionStart,
+  LiveSessionSummary,
 } from "@/types/live";
 
 const json = (payload: unknown) => JSON.stringify(payload);
+
+type LiveSessionWithAcademicId = Pick<
+  LiveSessionListItem | LiveSessionSummary | LiveSessionStart,
+  "academicSessionId"
+> & {
+  sessionId?: string | number;
+  academicSession?: {
+    id?: string | number;
+  } | null;
+};
+
+function presentId(value: unknown) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const normalized = String(value).trim();
+
+  return normalized ? normalized : null;
+}
+
+export function getAcademicSessionId(
+  session: LiveSessionWithAcademicId | null | undefined,
+) {
+  if (!session) {
+    return null;
+  }
+
+  return (
+    presentId(session.academicSessionId) ??
+    presentId(session.academicSession?.id) ??
+    presentId(session.sessionId)
+  );
+}
+
+export function getLiveSessionUrl(session: LiveSessionListItem | LiveSessionStart) {
+  const params = new URLSearchParams();
+  const academicSessionId = getAcademicSessionId(session);
+  const attendanceSessionId = "id" in session ? session.id : session.sessionId;
+
+  if (academicSessionId) {
+    params.set("academicSessionId", academicSessionId);
+  }
+
+  const query = params.toString();
+
+  return `/sessions/live/${encodeURIComponent(String(attendanceSessionId))}${
+    query ? `?${query}` : ""
+  }`;
+}
 
 export function startLiveSession(
   sessionId: string,
@@ -39,14 +90,26 @@ function normalizeQrToken(payload: unknown): LiveQrToken {
 
   if (payload && typeof payload === "object") {
     const record = payload as Record<string, unknown>;
-    const token = record.token ?? record.qrToken ?? record.secret;
+    const nestedQr =
+      record.qr && typeof record.qr === "object"
+        ? (record.qr as Record<string, unknown>)
+        : null;
+    const token =
+      record.token ??
+      record.qrToken ??
+      record.secret ??
+      record.code ??
+      nestedQr?.token ??
+      nestedQr?.qrToken ??
+      nestedQr?.secret;
+    const expiresAt = record.expiresAt ?? nestedQr?.expiresAt;
+    const expiresIn = record.expiresIn ?? nestedQr?.expiresIn;
 
     return {
       token: token ? String(token) : "",
       secret: record.secret ? String(record.secret) : undefined,
-      expiresAt: record.expiresAt ? String(record.expiresAt) : undefined,
-      expiresIn:
-        typeof record.expiresIn === "number" ? record.expiresIn : undefined,
+      expiresAt: expiresAt ? String(expiresAt) : undefined,
+      expiresIn: typeof expiresIn === "number" ? expiresIn : undefined,
     };
   }
 
@@ -78,7 +141,7 @@ export function getLiveSessionRecords(
 }
 
 export async function getLiveQr(
-  academicSessionId: number,
+  academicSessionId: string | number,
   options: { signal?: AbortSignal } = {},
 ) {
   const payload = await apiRequest<unknown>(

@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { closeLiveSession } from "@/services/live";
+import { closeLiveSession, getAcademicSessionId } from "@/services/live";
 import {
   liveSessionKeys,
   useLiveQrToken,
@@ -29,10 +29,7 @@ const REFRESH_SECONDS = 20;
 export function LiveSessionRoom({ sessionId }: { sessionId: string }) {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
-  const academicSessionIdParam = searchParams.get("academicSessionId");
-  const academicSessionId = academicSessionIdParam
-    ? Number.parseInt(academicSessionIdParam, 10)
-    : null;
+  const academicSessionIdParam = searchParams.get("academicSessionId")?.trim() || null;
   const [countdown, setCountdown] = useState(REFRESH_SECONDS);
   const {
     data: liveSession,
@@ -50,25 +47,29 @@ export function LiveSessionRoom({ sessionId }: { sessionId: string }) {
       void queryClient.invalidateQueries({ queryKey: liveSessionKeys.mySessions() });
       void queryClient.invalidateQueries({ queryKey: liveSessionKeys.session(sessionId) });
       void queryClient.invalidateQueries({ queryKey: liveSessionKeys.records(sessionId) });
-      void queryClient.invalidateQueries({ queryKey: liveSessionKeys.qr(sessionId) });
     },
   });
 
+  const summary = recordsData?.session;
+  const records = recordsData?.records ?? [];
   const isActive =
-    liveSession?.status === "ACTIVE" || recordsData?.session.status === "ACTIVE";
+    liveSession?.status === "ACTIVE" || summary?.status === "ACTIVE";
+  const qrAcademicSessionId =
+    academicSessionIdParam ??
+    getAcademicSessionId(liveSession) ??
+    getAcademicSessionId(summary);
+  const canLoadQr = isActive && Boolean(qrAcademicSessionId);
   const {
     data: qrToken,
     isLoading: qrLoading,
     error: qrError,
-  } = useLiveQrToken(academicSessionId, isActive);
+  } = useLiveQrToken(qrAcademicSessionId, canLoadQr);
   const token = qrToken?.token ?? "";
   const qrPayload: LiveQrPayload | null =
-    isActive && token ? { sessionId: String(academicSessionId ?? sessionId), token } : null;
-  const summary = recordsData?.session;
-  const records = recordsData?.records ?? [];
+    isActive && token ? { sessionId, token } : null;
 
   useEffect(() => {
-    if (!isActive) {
+    if (!canLoadQr) {
       setCountdown(0);
       return;
     }
@@ -79,9 +80,15 @@ export function LiveSessionRoom({ sessionId }: { sessionId: string }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isActive]);
+  }, [canLoadQr, token]);
 
   const error = sessionError ?? recordsError ?? qrError ?? closeMutation.error;
+  const qrLoadingState = sessionLoading || (canLoadQr && qrLoading);
+  const qrEmptyMessage = !isActive
+    ? "Live QR is available for active sessions only."
+    : !qrAcademicSessionId
+      ? "Missing academic session ID for this live session."
+      : "Waiting for the QR token.";
 
   return (
     <div className="dashboard-page">
@@ -135,7 +142,7 @@ export function LiveSessionRoom({ sessionId }: { sessionId: string }) {
         <CardContent className="p-6">
           <div className="flex flex-col items-center gap-5">
             <div className="flex h-[280px] w-full max-w-[280px] items-center justify-center rounded-lg border border-border bg-white p-5">
-              {sessionLoading || qrLoading ? (
+              {qrLoadingState ? (
                 <Skeleton className="h-full w-full rounded-lg" />
               ) : qrPayload ? (
                 <QRCodeSVG
@@ -145,7 +152,12 @@ export function LiveSessionRoom({ sessionId }: { sessionId: string }) {
                   includeMargin
                 />
               ) : (
-                <RefreshCw className="h-12 w-12 text-muted-foreground" />
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <RefreshCw className="h-12 w-12 text-muted-foreground" />
+                  <p className="max-w-[220px] text-[13px] font-medium text-muted-foreground">
+                    {qrEmptyMessage}
+                  </p>
+                </div>
               )}
             </div>
 
@@ -160,7 +172,7 @@ export function LiveSessionRoom({ sessionId }: { sessionId: string }) {
                 <p className="text-[13px] font-medium text-muted-foreground">Countdown</p>
                 <p className="mt-1 flex items-center gap-2 text-[16px] font-semibold text-foreground">
                   <Clock3 className="h-4 w-4 text-[#93a6d7]" />
-                  {isActive ? `Refreshing in ${countdown} sec` : "Refreshing paused"}
+                  {canLoadQr ? `Refreshing in ${countdown} sec` : "Refreshing paused"}
                 </p>
               </div>
             </div>

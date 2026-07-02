@@ -2,7 +2,7 @@ export type LiveSessionStatus = "ACTIVE" | "CLOSED" | "EXPIRED" | string;
 
 export type LiveSessionStart = {
   sessionId: string;
-  academicSessionId: number;
+  academicSessionId: string | number;
   secret?: string;
   startTime: string;
 };
@@ -16,6 +16,11 @@ export type LiveQrToken = {
 
 export type LiveSessionListItem = {
   id: string;
+  sessionId?: string | number;
+  academicSessionId?: string | number;
+  academicSession?: {
+    id?: string | number;
+  } | null;
   staffId: string | number;
   secret: string;
   status: LiveSessionStatus;
@@ -29,6 +34,11 @@ export type LiveSessionListItem = {
 
 export type LiveSessionSummary = {
   id: string;
+  sessionId?: string | number;
+  academicSessionId?: string | number;
+  academicSession?: {
+    id?: string | number;
+  } | null;
   status: LiveSessionStatus;
   startTime: string;
   endTime?: string | null;

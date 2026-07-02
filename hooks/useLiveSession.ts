@@ -27,7 +27,7 @@ export const liveSessionKeys = {
     [...liveSessionKeys.mySessions(), sessionId] as const,
   records: (sessionId: string) =>
     [...liveSessionKeys.all, "records", sessionId] as const,
-  qr: (academicSessionId: number) =>
+  qr: (academicSessionId: string | number) =>
     [...liveSessionKeys.all, "qr", academicSessionId] as const,
 };
 
@@ -72,10 +72,13 @@ export function useLiveRecords(sessionId: string) {
   });
 }
 
-export function useLiveQrToken(academicSessionId: number | null, active = true) {
+export function useLiveQrToken(
+  academicSessionId: string | number | null,
+  active = true,
+) {
   return useQuery({
-    queryKey: liveSessionKeys.qr(academicSessionId ?? -1),
-    queryFn: ({ signal }) => getLiveQr(academicSessionId ?? -1, { signal }),
+    queryKey: liveSessionKeys.qr(academicSessionId ?? "missing"),
+    queryFn: ({ signal }) => getLiveQr(academicSessionId ?? "missing", { signal }),
     enabled: Boolean(academicSessionId) && active,
     refetchInterval: active ? REFRESH_INTERVAL_MS : false,
   });
@@ -96,6 +99,7 @@ export function useLiveSessionController() {
 
   const activeRef = useRef(false);
   const sessionIdRef = useRef("");
+  const academicSessionIdRef = useRef<string | number | null>(null);
   const qrTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordsTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -139,6 +143,7 @@ export function useLiveSessionController() {
   const applyStartedSession = useCallback((session: LiveSessionStart) => {
     activeRef.current = true;
     sessionIdRef.current = session.sessionId;
+    academicSessionIdRef.current = session.academicSessionId;
     setActiveSession(session);
     setSessionId(session.sessionId);
     setSecret(session.secret ?? "");
@@ -156,7 +161,9 @@ export function useLiveSessionController() {
   }, []);
 
   const refreshQrCode = useCallback(async () => {
-    if (!activeRef.current || qrInFlightRef.current) {
+    const currentAcademicSessionId = academicSessionIdRef.current;
+
+    if (!activeRef.current || !currentAcademicSessionId || qrInFlightRef.current) {
       return;
     }
 
@@ -164,7 +171,7 @@ export function useLiveSessionController() {
     const controller = createController();
 
     try {
-      const qr = await getLiveSessionQr(sessionIdRef.current, {
+      const qr = await getLiveQr(currentAcademicSessionId, {
         signal: controller.signal,
       });
       setSecret(qr.token);
@@ -179,7 +186,7 @@ export function useLiveSessionController() {
       qrInFlightRef.current = false;
       releaseController(controller);
     }
-  }, [applyStartedSession, createController, readErrorMessage, releaseController]);
+  }, [createController, readErrorMessage, releaseController]);
 
   const loadRecords = useCallback(async () => {
     const currentSessionId = sessionIdRef.current;
@@ -239,6 +246,7 @@ export function useLiveSessionController() {
     abortPendingRequests();
     activeRef.current = false;
     sessionIdRef.current = "";
+    academicSessionIdRef.current = null;
     setLoading(true);
     setError(null);
     setClosed(false);
@@ -328,6 +336,7 @@ export function useLiveSessionController() {
   useEffect(() => {
     return () => {
       activeRef.current = false;
+      academicSessionIdRef.current = null;
       clearTimers();
       abortPendingRequests();
     };

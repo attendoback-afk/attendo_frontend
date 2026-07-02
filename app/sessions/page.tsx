@@ -38,7 +38,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { liveSessionKeys } from "@/hooks/useLiveSession";
 import { classesApi, modulesApi, roomsApi, sessionsApi } from "@/lib/api/services";
-import { startLiveSession } from "@/services/live";
+import { getLiveSessionUrl, startLiveSession } from "@/services/live";
 import {
   DAY_OF_WEEK_LABELS,
   DAY_OF_WEEK_VALUES,
@@ -131,9 +131,7 @@ export default function SessionsPage() {
         title: "Live session started",
         description: "The QR code is ready for attendance.",
       });
-      router.push(
-        `/sessions/live/${liveSession.sessionId}?academicSessionId=${liveSession.academicSessionId}`,
-      );
+      router.push(getLiveSessionUrl(liveSession));
     },
     onError: (startError) => {
       toast({

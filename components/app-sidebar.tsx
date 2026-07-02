@@ -25,7 +25,6 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { canAccessRoute } from "@/lib/auth";
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutGrid },
   { name: "Departments", href: "/departments", icon: Building2 },
   { name: "Admins", href: "/admins", icon: ShieldCheck },
   { name: "Classes", href: "/classes", icon: NotebookTabs },
@@ -35,7 +34,6 @@ const navigation = [
   { name: "Sessions", href: "/sessions", icon: CalendarDays },
   { name: "Schedules", href: "/schedules", icon: Calendar },
   { name: "Attendance", href: "/attendance", icon: UserRoundCheck },
-  { name: "Reports", href: "/reports", icon: FileText },
 ];
 
 export function AppSidebar({
